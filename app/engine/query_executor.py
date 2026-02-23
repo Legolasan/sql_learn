@@ -281,13 +281,15 @@ class QueryExecutor:
 
     def _extract_column_name(self, col_expr: str) -> str | None:
         """Extract the column name from an expression."""
-        # Handle table.column
+        col_expr = col_expr.strip()
+
+        # Handle aliases first (col AS alias) - strip the alias part
+        if ' AS ' in col_expr.upper():
+            col_expr = re.split(r'\s+AS\s+', col_expr, flags=re.IGNORECASE)[0].strip()
+
+        # Handle table.column (e.g., e.name, employees.salary)
         if '.' in col_expr:
             return col_expr.split('.')[-1].strip()
-
-        # Handle aliases (col AS alias)
-        if ' AS ' in col_expr.upper():
-            return col_expr.split()[0].strip()
 
         # Handle functions
         match = re.match(r'\w+\(([^)]+)\)', col_expr)
@@ -295,6 +297,9 @@ class QueryExecutor:
             inner = match.group(1).strip()
             if inner == '*':
                 return None
+            # Handle table.column inside function
+            if '.' in inner:
+                return inner.split('.')[-1].strip()
             return inner
 
         return col_expr.strip()
@@ -375,11 +380,18 @@ class QueryExecutor:
         primary_table = parsed.tables[0]
         data = self._get_table_data(primary_table)
 
+        # Find primary table alias (reverse lookup in table_aliases)
+        primary_alias = None
+        for alias, table in parsed.table_aliases.items():
+            if table == primary_table:
+                primary_alias = alias
+                break
+
         # Apply JOINs
         for join in parsed.joins:
             join_table = join['table']
             join_data = self._get_table_data(join_table)
-            data = self._apply_join(data, join_data, join, primary_table, join_table)
+            data = self._apply_join(data, join_data, join, primary_table, join_table, primary_alias)
 
         # Apply WHERE
         if parsed.where_conditions:
@@ -518,13 +530,17 @@ class QueryExecutor:
         return dict(row)
 
     def _apply_join(self, left_data: list[dict], right_data: list[dict],
-                    join_info: dict, left_table: str, right_table: str) -> list[dict]:
+                    join_info: dict, left_table: str, right_table: str,
+                    left_alias: str = None) -> list[dict]:
         """Apply a JOIN operation."""
         join_type = join_info.get('type', 'INNER')
         on_clause = join_info.get('on', '')
+        right_alias = join_info.get('alias')
 
         # Parse ON clause to get join columns
-        left_col, right_col = self._parse_join_on(on_clause, left_table, right_table)
+        left_col, right_col = self._parse_join_on(
+            on_clause, left_table, right_table, left_alias, right_alias
+        )
 
         result = []
         right_matched = set()
@@ -564,7 +580,8 @@ class QueryExecutor:
 
         return result
 
-    def _parse_join_on(self, on_clause: str, left_table: str, right_table: str) -> tuple[str, str]:
+    def _parse_join_on(self, on_clause: str, left_table: str, right_table: str,
+                        left_alias: str = None, right_alias: str = None) -> tuple[str, str]:
         """Parse JOIN ON clause to extract column names."""
         if not on_clause:
             # Default join columns
@@ -574,14 +591,34 @@ class QueryExecutor:
                 return 'employee_id', 'id'
             return 'id', 'id'
 
-        # Parse "table1.col = table2.col"
+        # Parse "table1.col = table2.col" or "alias1.col = alias2.col"
         match = re.search(r'(\w+)\.(\w+)\s*=\s*(\w+)\.(\w+)', on_clause, re.IGNORECASE)
         if match:
             t1, c1, t2, c2 = match.groups()
-            if t1.lower() == left_table.lower():
+            t1_lower, t2_lower = t1.lower(), t2.lower()
+
+            # Check if t1 matches left table/alias
+            left_matches = [left_table.lower()]
+            if left_alias:
+                left_matches.append(left_alias.lower())
+
+            right_matches = [right_table.lower()]
+            if right_alias:
+                right_matches.append(right_alias.lower())
+
+            if t1_lower in left_matches:
                 return c1.lower(), c2.lower()
-            else:
+            elif t1_lower in right_matches:
                 return c2.lower(), c1.lower()
+            else:
+                # Fallback: determine by column membership in tables
+                left_cols = self.TABLE_COLUMNS.get(left_table.lower(), [])
+                right_cols = self.TABLE_COLUMNS.get(right_table.lower(), [])
+
+                if c1.lower() in left_cols:
+                    return c1.lower(), c2.lower()
+                else:
+                    return c2.lower(), c1.lower()
 
         return 'id', 'id'
 

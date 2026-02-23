@@ -35,6 +35,8 @@ class ParsedQuery:
     ctes: list[CTEDefinition] = field(default_factory=list)
     main_query: str = ""
     is_recursive: bool = False
+    # Table aliases: alias -> table_name
+    table_aliases: dict[str, str] = field(default_factory=dict)
 
 
 def parse_query(sql: str) -> ParsedQuery:
@@ -78,6 +80,7 @@ def parse_query(sql: str) -> ParsedQuery:
     order_by = _extract_order_by(main_query)
     limit = _extract_limit(main_query)
     joins = _extract_joins(main_query)
+    table_aliases = _extract_table_aliases(main_query)
 
     return ParsedQuery(
         query_type=query_type,
@@ -92,7 +95,8 @@ def parse_query(sql: str) -> ParsedQuery:
         raw_query=sql,
         ctes=ctes,
         main_query=main_query,
-        is_recursive=is_recursive
+        is_recursive=is_recursive,
+        table_aliases=table_aliases
     )
 
 
@@ -180,7 +184,7 @@ def _extract_ctes(sql: str) -> tuple[list[CTEDefinition], str]:
 
 def _extract_tables(sql: str) -> list[str]:
     """Extract table names from FROM clause."""
-    # Match FROM table_name
+    # Match FROM table_name [AS] [alias]
     pattern = r'\bFROM\s+(\w+)'
     match = re.search(pattern, sql, re.IGNORECASE)
     tables = []
@@ -193,6 +197,27 @@ def _extract_tables(sql: str) -> list[str]:
         tables.append(match.group(1).lower())
 
     return tables
+
+
+def _extract_table_aliases(sql: str) -> dict[str, str]:
+    """Extract table aliases mapping alias -> table_name."""
+    aliases = {}
+
+    # Match FROM table_name [AS] alias (before JOIN or WHERE)
+    from_pattern = r'\bFROM\s+(\w+)\s+(?:AS\s+)?(\w+)(?=\s+(?:INNER|LEFT|RIGHT|CROSS|JOIN|WHERE|GROUP|ORDER|LIMIT|$))'
+    match = re.search(from_pattern, sql, re.IGNORECASE)
+    if match:
+        table_name, alias = match.groups()
+        if alias.upper() not in ('INNER', 'LEFT', 'RIGHT', 'CROSS', 'JOIN', 'WHERE', 'GROUP', 'ORDER', 'LIMIT'):
+            aliases[alias.lower()] = table_name.lower()
+
+    # Also get JOIN table aliases
+    join_pattern = r'\bJOIN\s+(\w+)\s+(?:AS\s+)?(\w+)\s+ON'
+    for match in re.finditer(join_pattern, sql, re.IGNORECASE):
+        table_name, alias = match.groups()
+        aliases[alias.lower()] = table_name.lower()
+
+    return aliases
 
 
 def _extract_columns(sql: str) -> list[str]:
