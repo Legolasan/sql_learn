@@ -12,6 +12,25 @@ When making changes, commit and push to the GitHub repo.
 
 ---
 
+## Google Analytics
+
+The Google Analytics tag (`G-0R0F7W8JC4`) is included in `base.html` and automatically loads on all pages that extend it.
+
+If creating a standalone page that doesn't extend `base.html`, add this to the `<head>`:
+
+```html
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-0R0F7W8JC4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-0R0F7W8JC4');
+</script>
+```
+
+---
+
 ## Quick Start
 
 ```bash
