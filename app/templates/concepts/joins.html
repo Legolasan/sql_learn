@@ -5,14 +5,50 @@
 {% else %}
 
 <div class="space-y-6">
-    <!-- Join type indicator -->
-    <div class="bg-indigo-50 rounded-lg p-4 flex items-center justify-between">
-        <div>
-            <span class="text-sm text-indigo-600">Join Type:</span>
-            <span class="ml-2 text-xl font-bold text-indigo-700">{{ viz_data.join_type }} JOIN</span>
+    <!-- Join Type Selector -->
+    <div class="bg-indigo-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <span class="text-sm text-indigo-600">Join Type:</span>
+                <span class="ml-2 text-xl font-bold text-indigo-700">{{ viz_data.join_type }} JOIN</span>
+            </div>
+            <div class="text-sm text-gray-600">
+                {{ viz_data.join_condition.left_col }} = {{ viz_data.join_condition.right_col }}
+            </div>
         </div>
-        <div class="text-sm text-gray-600">
-            {{ viz_data.join_condition.left_col }} = {{ viz_data.join_condition.right_col }}
+
+        <!-- Join Type Buttons -->
+        <div class="flex flex-wrap gap-2">
+            {% set join_types = ['INNER', 'LEFT', 'RIGHT', 'CROSS'] %}
+            {% for jtype in join_types %}
+            {% set new_query = query | replace(viz_data.join_type + ' JOIN', jtype + ' JOIN') | replace(viz_data.join_type | lower + ' join', jtype + ' JOIN') %}
+            {% if viz_data.join_type not in ['INNER', 'LEFT', 'RIGHT', 'CROSS'] %}
+            {% set new_query = query | replace(' JOIN ', ' ' + jtype + ' JOIN ') %}
+            {% endif %}
+            <button
+                class="px-4 py-2 rounded-lg font-medium text-sm transition-all border-2
+                    {% if viz_data.join_type == jtype %}
+                    border-indigo-500 bg-indigo-100 text-indigo-700
+                    {% else %}
+                    border-gray-200 bg-white text-gray-700 hover:border-indigo-300 hover:bg-indigo-50
+                    {% endif %}"
+                hx-post="{{ url_for('concepts.run_query', concept_name='joins') }}"
+                hx-vals='{"query": "SELECT * FROM {{ viz_data.left_table.name }} {{ jtype }} JOIN {{ viz_data.right_table.name }} ON {{ viz_data.left_table.name }}.{{ viz_data.join_condition.left_col }} = {{ viz_data.right_table.name }}.{{ viz_data.join_condition.right_col }}"}'
+                hx-target="#visualization-area"
+                hx-swap="innerHTML">
+                <span class="flex items-center">
+                    {% if jtype == 'INNER' %}&#8745;
+                    {% elif jtype == 'LEFT' %}&#10197;
+                    {% elif jtype == 'RIGHT' %}&#10198;
+                    {% elif jtype == 'CROSS' %}&times;
+                    {% endif %}
+                    <span class="ml-2">{{ jtype }}</span>
+                    {% if viz_data.join_type == jtype %}
+                    <span class="ml-2 text-xs bg-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded">Active</span>
+                    {% endif %}
+                </span>
+            </button>
+            {% endfor %}
         </div>
     </div>
 

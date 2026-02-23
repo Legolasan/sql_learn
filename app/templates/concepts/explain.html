@@ -5,6 +5,119 @@
 {% else %}
 
 <div class="space-y-6">
+    <!-- Quick Diagnosis Card -->
+    {% if viz_data.diagnosis %}
+    <div class="bg-gradient-to-r {% if viz_data.diagnosis.verdict == 'good' %}from-green-500 to-emerald-600
+                {% elif viz_data.diagnosis.verdict == 'caution' %}from-yellow-500 to-orange-500
+                {% else %}from-red-500 to-rose-600{% endif %} text-white rounded-lg p-6 shadow-lg">
+
+        <!-- Verdict Header -->
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-2xl font-bold">{{ viz_data.diagnosis.verdict_label }}</h3>
+                <p class="text-sm opacity-80">Quick Diagnosis</p>
+            </div>
+            <span class="text-5xl">
+                {% if viz_data.diagnosis.verdict == 'good' %}&#10003;
+                {% elif viz_data.diagnosis.verdict == 'caution' %}&#9888;
+                {% else %}&#10007;{% endif %}
+            </span>
+        </div>
+
+        <p class="text-lg opacity-95 mb-4">{{ viz_data.diagnosis.summary }}</p>
+
+        <!-- What to Check (Priority Checklist) -->
+        <div class="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+            <h4 class="font-semibold mb-3 flex items-center">
+                <span class="mr-2">&#128269;</span> What to Look For:
+            </h4>
+            <div class="space-y-3">
+                {% for item in viz_data.diagnosis.checklist %}
+                <div class="flex items-start space-x-3">
+                    <span class="flex-shrink-0 w-6 h-6 rounded-full
+                        {% if item.status == 'good' %}bg-green-400/30
+                        {% elif item.status == 'caution' %}bg-yellow-400/30
+                        {% else %}bg-red-400/30{% endif %}
+                        flex items-center justify-center text-sm font-bold">
+                        {{ item.priority }}
+                    </span>
+                    <div class="flex-1">
+                        <div class="font-medium flex items-center">
+                            <span class="mr-2">
+                                {% if item.status == 'good' %}&#10003;
+                                {% elif item.status == 'caution' %}&#9888;
+                                {% else %}&#10007;{% endif %}
+                            </span>
+                            {{ item.what }}
+                        </div>
+                        <div class="text-sm opacity-80 mt-0.5">{{ item.why }}</div>
+                        {% if item.fix %}
+                        <div class="text-sm mt-2 bg-white/15 px-3 py-1.5 rounded inline-block font-mono text-xs">
+                            <span class="opacity-70">&#128161; Fix:</span> {{ item.fix }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Try Different Indexes Panel -->
+    {% if viz_data.index_scenarios and viz_data.index_scenarios.available %}
+    <div class="bg-white border rounded-lg overflow-hidden" x-data="{ showComparison: false }">
+        <div class="bg-purple-50 px-4 py-3 border-b">
+            <h3 class="font-semibold text-purple-800 flex items-center">
+                <span class="mr-2">&#128270;</span>
+                Try Different Indexes
+            </h3>
+            <p class="text-sm text-purple-600 mt-1">Click an index to see how query execution would change</p>
+        </div>
+        <div class="p-4">
+            <!-- Index Buttons -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                {% for scenario in viz_data.index_scenarios.scenarios %}
+                <button
+                    class="px-4 py-2 rounded-lg border-2 font-medium text-sm transition-all
+                        {% if scenario.is_current %}border-indigo-500 bg-indigo-50 text-indigo-700
+                        {% elif scenario.is_best %}border-green-500 bg-green-50 text-green-700
+                        {% else %}border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50{% endif %}"
+                    hx-post="{{ url_for('concepts.compare_index') }}"
+                    hx-vals='{"query": "{{ query | replace("\"", "\\\"") }}", "index": "{{ scenario.index_name if scenario.index_name != 'No Index' else 'none' }}"}'
+                    hx-target="#index-comparison-result"
+                    hx-swap="innerHTML"
+                    @click="showComparison = true">
+                    <span class="flex items-center">
+                        {{ scenario.index_name }}
+                        {% if scenario.is_current %}
+                        <span class="ml-2 text-xs bg-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded">Current</span>
+                        {% endif %}
+                        {% if scenario.is_best and not scenario.is_current %}
+                        <span class="ml-2 text-xs bg-green-200 text-green-700 px-1.5 py-0.5 rounded">Best</span>
+                        {% endif %}
+                    </span>
+                    <span class="block text-xs mt-0.5 opacity-70">
+                        {% if scenario.index_column %}
+                        on {{ scenario.index_column }}
+                        {% else %}
+                        Full table scan
+                        {% endif %}
+                    </span>
+                </button>
+                {% endfor %}
+            </div>
+
+            <!-- Comparison Result Area -->
+            <div id="index-comparison-result" x-show="showComparison" x-transition>
+                <div class="text-center text-gray-500 py-4">
+                    <span class="text-sm">Click an index above to see comparison</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- EXPLAIN table -->
     <div class="bg-white border rounded-lg overflow-hidden">
         <div class="bg-gray-50 px-4 py-3 border-b">

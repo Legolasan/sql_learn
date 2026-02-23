@@ -67,6 +67,30 @@ def run_query(concept_name):
     )
 
 
+@concepts_bp.route('/explain/compare-index', methods=['POST'])
+def compare_index():
+    """Compare user-selected index against MySQL's choice."""
+    query = request.form.get('query', '')
+    selected_index = request.form.get('index', '')
+
+    if not query or not selected_index:
+        return render_template(
+            'components/index_comparison_result.html',
+            error="Missing query or index selection"
+        )
+
+    concept = get_concept('explain')
+    dataset = get_dataset()
+
+    comparison = concept.get_index_comparison(query, dataset, selected_index)
+
+    return render_template(
+        'components/index_comparison_result.html',
+        comparison=comparison,
+        query=query
+    )
+
+
 @concepts_bp.route('/<concept_name>/step/<int:step_num>', methods=['GET'])
 def get_step(concept_name, step_num):
     concept = get_concept(concept_name)

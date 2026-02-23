@@ -248,3 +248,135 @@ def _generate_annotations(row: ExplainRow, query: ParsedQuery, table: str) -> li
             ))
 
     return annotations
+
+
+def predict_access_for_index(query: ParsedQuery, table: str, index_name: str | None, indexes: dict, dataset: Any) -> dict:
+    """
+    Predict what would happen if we forced use of a specific index.
+
+    Args:
+        query: Parsed query object
+        table: Table name
+        index_name: Index to evaluate (None for no index / table scan)
+        indexes: Available indexes for the table
+        dataset: Dataset to get row counts
+
+    Returns:
+        Dict with access_type, rows, key, and other prediction data
+    """
+    table_data = dataset.get_table(table)
+    total_rows = len(table_data)
+
+    if index_name is None:
+        return {
+            'access_type': 'ALL',
+            'rows': total_rows,
+            'key': None,
+            'key_len': None,
+            'reason': 'Full table scan - no index used',
+            'cost': _calculate_index_cost('ALL', total_rows)
+        }
+
+    # Get the column this index is on
+    idx_info = indexes.get(index_name)
+    if not idx_info:
+        return {
+            'access_type': 'ALL',
+            'rows': total_rows,
+            'key': None,
+            'key_len': None,
+            'reason': f'Index {index_name} not found',
+            'cost': _calculate_index_cost('ALL', total_rows)
+        }
+
+    idx_col, idx_values = idx_info
+
+    # Get columns used in WHERE conditions
+    where_cols = [c.get('column') for c in query.where_conditions]
+
+    # Check if this index column is used in WHERE
+    if idx_col in where_cols:
+        # Find the operator used
+        op = None
+        for cond in query.where_conditions:
+            if cond.get('column') == idx_col:
+                op = cond.get('op')
+                break
+
+        if op == '=' and index_name == 'PRIMARY':
+            return {
+                'access_type': 'const',
+                'rows': 1,
+                'key': index_name,
+                'key_len': len(index_name) * 4,
+                'reason': f'Single row lookup via PRIMARY key on {idx_col}',
+                'cost': _calculate_index_cost('const', 1)
+            }
+        elif op == '=':
+            estimated_rows = max(1, total_rows // 10)
+            return {
+                'access_type': 'ref',
+                'rows': estimated_rows,
+                'key': index_name,
+                'key_len': len(index_name) * 4,
+                'reason': f'Index lookup on {idx_col} - finds matching rows',
+                'cost': _calculate_index_cost('ref', estimated_rows)
+            }
+        elif op in ('>', '<', '>=', '<=', 'BETWEEN'):
+            estimated_rows = max(1, int(total_rows * 0.3))
+            return {
+                'access_type': 'range',
+                'rows': estimated_rows,
+                'key': index_name,
+                'key_len': len(index_name) * 4,
+                'reason': f'Range scan on index {index_name} ({idx_col})',
+                'cost': _calculate_index_cost('range', estimated_rows)
+            }
+        elif op == 'LIKE':
+            # LIKE with prefix can use index
+            estimated_rows = max(1, int(total_rows * 0.5))
+            return {
+                'access_type': 'range',
+                'rows': estimated_rows,
+                'key': index_name,
+                'key_len': len(index_name) * 4,
+                'reason': f'Index range scan for LIKE on {idx_col}',
+                'cost': _calculate_index_cost('range', estimated_rows)
+            }
+
+    # Index column not in WHERE - index can't help
+    return {
+        'access_type': 'ALL',
+        'rows': total_rows,
+        'key': None,
+        'key_len': None,
+        'reason': f'Index {index_name} is on "{idx_col}", but query filters on "{", ".join(where_cols) if where_cols else "nothing"}"',
+        'cost': _calculate_index_cost('ALL', total_rows)
+    }
+
+
+def _calculate_index_cost(access_type: str, rows: int) -> int:
+    """
+    Calculate a relative cost score for an access method.
+    Lower is better.
+
+    Args:
+        access_type: The access type (const, ref, range, ALL, etc.)
+        rows: Estimated number of rows to examine
+
+    Returns:
+        Integer cost score
+    """
+    # Base costs for each access type
+    base_costs = {
+        'system': 1,
+        'const': 1,
+        'eq_ref': 2,
+        'ref': 10,
+        'range': 20,
+        'index': 50,
+        'ALL': 100
+    }
+
+    base = base_costs.get(access_type, 50)
+    return base * max(1, rows)

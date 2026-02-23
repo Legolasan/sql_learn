@@ -4,8 +4,10 @@ Covers INNER, LEFT, RIGHT, CROSS, SELF JOIN, EXISTS (semi-join), NOT EXISTS (ant
 """
 
 from typing import Any
+import re
 
 from app.concepts.base import BaseConcept, Step
+from app.engine.query_parser import parse_query
 
 
 class JoinTypesConcept(BaseConcept):
@@ -105,10 +107,11 @@ class JoinTypesConcept(BaseConcept):
         detected_join = self._detect_join_type(query)
 
         return {
+            "query": query,
             "join_overview": self._get_join_overview(),
             "detected_join": detected_join,
             "join_details": self._get_join_details(detected_join),
-            "animation_data": self._get_animation_data(detected_join, dataset),
+            "animation_data": self._get_animation_data(detected_join, dataset, query),
             "venn_diagrams": self._get_venn_diagrams(),
             "row_multiplication": self._get_row_multiplication_demo(dataset),
             "semi_anti_joins": self._get_semi_anti_join_patterns(),
@@ -313,79 +316,72 @@ class JoinTypesConcept(BaseConcept):
             "how_it_works": ["See the join reference above"],
         })
 
-    def _get_animation_data(self, detected_join: dict, dataset) -> dict:
-        """Get data for the animated join visualization."""
-        # Sample data for animation
-        employees_sample = [
-            {"id": 1, "name": "Alice", "department_id": 1},
-            {"id": 2, "name": "Bob", "department_id": 1},
-            {"id": 3, "name": "Carol", "department_id": 2},
-            {"id": 4, "name": "Dave", "department_id": None},  # No department!
-        ]
-
-        departments_sample = [
-            {"id": 1, "name": "Engineering"},
-            {"id": 2, "name": "Sales"},
-            {"id": 3, "name": "HR"},  # No employees!
-        ]
-
+    def _get_animation_data(self, detected_join: dict, dataset, query: str = None) -> dict:
+        """Get data for the animated join visualization using actual query data."""
         join_type = detected_join["type"]
 
-        # Calculate results based on join type
-        if join_type == "inner":
-            results = [
-                {"left": employees_sample[0], "right": departments_sample[0], "matched": True},
-                {"left": employees_sample[1], "right": departments_sample[0], "matched": True},
-                {"left": employees_sample[2], "right": departments_sample[1], "matched": True},
-            ]
-            excluded_left = [employees_sample[3]]  # Dave has no dept
-            excluded_right = [departments_sample[2]]  # HR has no employees
-        elif join_type == "left":
-            results = [
-                {"left": employees_sample[0], "right": departments_sample[0], "matched": True},
-                {"left": employees_sample[1], "right": departments_sample[0], "matched": True},
-                {"left": employees_sample[2], "right": departments_sample[1], "matched": True},
-                {"left": employees_sample[3], "right": None, "matched": False},  # Dave with NULL
-            ]
-            excluded_left = []
-            excluded_right = [departments_sample[2]]  # HR not included
-        elif join_type == "right":
-            results = [
-                {"left": employees_sample[0], "right": departments_sample[0], "matched": True},
-                {"left": employees_sample[1], "right": departments_sample[0], "matched": True},
-                {"left": employees_sample[2], "right": departments_sample[1], "matched": True},
-                {"left": None, "right": departments_sample[2], "matched": False},  # HR with NULL
-            ]
-            excluded_left = [employees_sample[3]]  # Dave not included
-            excluded_right = []
-        elif join_type == "cross":
-            # First few of cross product
-            results = []
-            for emp in employees_sample[:2]:  # Just first 2 employees for demo
-                for dept in departments_sample:
-                    results.append({"left": emp, "right": dept, "matched": True})
-            excluded_left = []
-            excluded_right = []
-        else:
-            results = []
-            excluded_left = []
-            excluded_right = []
+        # Try to extract tables from query
+        left_table_name = "employees"
+        right_table_name = "departments"
+        left_key = "department_id"
+        right_key = "id"
+
+        if query:
+            # Parse tables from query
+            table_pattern = r'\b(employees|departments|customers|products|orders|order_items)\s*(?:AS\s+)?(\w+)?'
+            tables_found = re.findall(table_pattern, query, re.IGNORECASE)
+
+            if len(tables_found) >= 2:
+                left_table_name = tables_found[0][0].lower()
+                right_table_name = tables_found[1][0].lower()
+
+                # Try to detect join keys from ON clause
+                on_pattern = r'ON\s+(\w+)\.(\w+)\s*=\s*(\w+)\.(\w+)'
+                on_match = re.search(on_pattern, query, re.IGNORECASE)
+                if on_match:
+                    left_alias = tables_found[0][1] if tables_found[0][1] else left_table_name[0]
+                    right_alias = tables_found[1][1] if tables_found[1][1] else right_table_name[0]
+
+                    if on_match.group(1).lower() == left_alias.lower():
+                        left_key = on_match.group(2)
+                        right_key = on_match.group(4)
+                    else:
+                        left_key = on_match.group(4)
+                        right_key = on_match.group(2)
+
+        # Get actual data from dataset (limited for animation)
+        left_data = dataset.get_table(left_table_name)[:4]
+        right_data = dataset.get_table(right_table_name)[:4]
+
+        # Convert to dicts for JSON serialization
+        def row_to_dict(row, table_name):
+            columns = dataset.get_table_columns(table_name)
+            result = {}
+            for col in columns[:4]:  # Limit columns for display
+                val = getattr(row, col, None)
+                # Handle non-JSON-serializable types
+                if hasattr(val, 'isoformat'):
+                    val = str(val)
+                result[col] = val
+            return result
+
+        left_rows = [row_to_dict(r, left_table_name) for r in left_data]
+        right_rows = [row_to_dict(r, right_table_name) for r in right_data]
 
         return {
             "left_table": {
-                "name": "employees",
-                "rows": employees_sample,
-                "key_column": "department_id",
+                "name": left_table_name,
+                "rows": left_rows,
+                "key_column": left_key,
             },
             "right_table": {
-                "name": "departments",
-                "rows": departments_sample,
-                "key_column": "id",
+                "name": right_table_name,
+                "rows": right_rows,
+                "key_column": right_key,
             },
             "join_type": join_type,
-            "results": results,
-            "excluded_left": excluded_left,
-            "excluded_right": excluded_right,
+            "left_key": left_key,
+            "right_key": right_key,
             "animation_steps": self._get_animation_steps(join_type),
         }
 
