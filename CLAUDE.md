@@ -2,6 +2,16 @@
 
 An interactive Flask application for learning MySQL concepts through visual animations and hands-on query execution.
 
+## Repository & Deployment
+
+- **GitHub:** https://github.com/Legolasan/sql_learn
+- **Live Site:** https://legolasan.in/learn/mysql/
+- **Portfolio Home:** https://legolasan.in/
+
+When making changes, commit and push to the GitHub repo.
+
+---
+
 ## Quick Start
 
 ```bash
