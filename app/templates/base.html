@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}MySQL Visual Learner{% endblock %}</title>
 
+    <!-- Google Analytics -->
+    {% if ga_tracking_id %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ ga_tracking_id }}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{ ga_tracking_id }}');
+
+        // Custom event tracking helper
+        window.trackEvent = function(eventName, params) {
+            gtag('event', eventName, params);
+        };
+    </script>
+    {% else %}
+    <script>
+        // Analytics disabled - no tracking ID configured
+        window.trackEvent = function() {};
+    </script>
+    {% endif %}
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 

@@ -142,6 +142,33 @@ from app.concepts.my_concept import MyConcept
 register_concept(MyConcept())
 ```
 
+## Analytics
+
+Optional Google Analytics 4 integration for tracking page views and user engagement.
+
+### Setup
+
+Set the `GA_TRACKING_ID` environment variable:
+
+```bash
+# Linux/macOS
+export GA_TRACKING_ID=G-XXXXXXXXXX
+
+# Windows
+set GA_TRACKING_ID=G-XXXXXXXXXX
+
+# Or in .env file
+GA_TRACKING_ID=G-XXXXXXXXXX
+```
+
+### Events Tracked
+
+| Event | Description |
+|-------|-------------|
+| `view_concept` | When a user views a learning concept |
+| `run_query` | When a user executes a query |
+| `use_sample_query` | When a user clicks a sample query |
+
 ## Screenshots
 
 *Coming soon*

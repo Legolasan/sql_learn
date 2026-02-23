@@ -3,6 +3,13 @@
 {% block title %}{{ concept.display_name }} - MySQL Visual Learner{% endblock %}
 
 {% block content %}
+<!-- Track concept view -->
+<script>
+    trackEvent('view_concept', {
+        concept_name: '{{ concept.name }}',
+        concept_difficulty: '{{ concept.difficulty }}'
+    });
+</script>
 <div class="mb-6">
     <h1 class="text-3xl font-bold text-gray-800">{{ concept.display_name }}</h1>
     <p class="text-gray-600 mt-2">{{ concept.description }}</p>
@@ -13,6 +20,7 @@
     <form hx-post="/concept/{{ concept.name }}/query"
           hx-target="#visualization-area"
           hx-swap="innerHTML"
+          onsubmit="trackEvent('run_query', {concept_name: '{{ concept.name }}'})"
           class="space-y-4">
         <div>
             <label for="query" class="block text-sm font-medium text-gray-700 mb-2">
@@ -32,7 +40,7 @@
             <span class="text-sm text-gray-500">Try:</span>
             {% for sample in concept.get_sample_queries() %}
             <button type="button"
-                    onclick="document.getElementById('query').value = this.dataset.query"
+                    onclick="document.getElementById('query').value = this.dataset.query; trackEvent('use_sample_query', {concept_name: '{{ concept.name }}'});"
                     data-query="{{ sample }}"
                     class="text-sm px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors">
                 {{ sample[:40] }}{% if sample|length > 40 %}...{% endif %}

@@ -1,9 +1,14 @@
+import os
+
 from flask import Flask
 
 
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'dev-secret-key-change-in-prod'
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
+
+    # Google Analytics - set GA_TRACKING_ID environment variable to enable
+    app.config['GA_TRACKING_ID'] = os.environ.get('GA_TRACKING_ID', '')
 
     # Register blueprints
     from app.routes.main import main_bp
@@ -17,6 +22,9 @@ def create_app():
 
     @app.context_processor
     def inject_concepts():
-        return {'all_concepts': get_all_concepts()}
+        return {
+            'all_concepts': get_all_concepts(),
+            'ga_tracking_id': app.config.get('GA_TRACKING_ID', ''),
+        }
 
     return app
