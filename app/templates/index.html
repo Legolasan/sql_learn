@@ -21,7 +21,7 @@
         </h2>
         <div class="grid md:grid-cols-3 gap-4">
             {% for concept in all_concepts if concept.difficulty == 'beginner' %}
-            <a href="/concept/{{ concept.name }}"
+            <a href="{{ url_for('concepts.show_concept', concept_name=concept.name) }}"
                class="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow border border-gray-200 hover:border-green-300">
                 <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ concept.display_name }}</h3>
                 <p class="text-gray-600 text-sm">{{ concept.description }}</p>
@@ -38,7 +38,7 @@
         </h2>
         <div class="grid md:grid-cols-3 gap-4">
             {% for concept in all_concepts if concept.difficulty == 'intermediate' %}
-            <a href="/concept/{{ concept.name }}"
+            <a href="{{ url_for('concepts.show_concept', concept_name=concept.name) }}"
                class="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow border border-gray-200 hover:border-yellow-300">
                 <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ concept.display_name }}</h3>
                 <p class="text-gray-600 text-sm">{{ concept.description }}</p>
@@ -55,7 +55,7 @@
         </h2>
         <div class="grid md:grid-cols-3 gap-4">
             {% for concept in all_concepts if concept.difficulty == 'advanced' %}
-            <a href="/concept/{{ concept.name }}"
+            <a href="{{ url_for('concepts.show_concept', concept_name=concept.name) }}"
                class="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow border border-gray-200 hover:border-red-300">
                 <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ concept.display_name }}</h3>
                 <p class="text-gray-600 text-sm">{{ concept.description }}</p>
