@@ -17,7 +17,7 @@
 
 <!-- Query input -->
 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-    <form hx-post="/concept/{{ concept.name }}/query"
+    <form hx-post="{{ url_for('concepts.run_query', concept_name=concept.name) }}"
           hx-target="#visualization-area"
           hx-swap="innerHTML"
           onsubmit="trackEvent('run_query', {concept_name: '{{ concept.name }}'})"

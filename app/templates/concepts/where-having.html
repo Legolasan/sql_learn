@@ -145,12 +145,12 @@
             <h4 class="font-semibold">Steps</h4>
             <div class="flex items-center space-x-2">
                 <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        hx-get="/concept/where-having/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-get="{{ url_for('concepts.get_step', concept_name=concept.name, step_num=current_step - 1) }}?query={{ query | urlencode }}"
                         hx-target="#visualization-area"
                         {% if current_step <= 0 %}disabled{% endif %}>◀ Prev</button>
                 <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
                 <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                        hx-get="/concept/where-having/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-get="{{ url_for('concepts.get_step', concept_name=concept.name, step_num=current_step + 1) }}?query={{ query | urlencode }}"
                         hx-target="#visualization-area"
                         {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next ▶</button>
             </div>
