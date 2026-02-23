@@ -268,7 +268,7 @@
             <div>
                 <h5 class="font-medium text-sm text-gray-700 mb-2">{{ section.name }}</h5>
                 <div class="space-y-1">
-                    {% for item in section.items %}
+                    {% for item in section['items'] %}
                     <code class="block text-xs bg-gray-50 px-2 py-1 rounded text-gray-600">{{ item }}</code>
                     {% endfor %}
                 </div>
