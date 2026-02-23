@@ -39,7 +39,9 @@ from app.concepts.cardinality_concept import CardinalityConcept
 from app.concepts.window_functions_concept import WindowFunctionsConcept
 from app.concepts.innodb_concept import InnoDBConcept
 from app.concepts.data_layout_concept import DataLayoutConcept
+from app.concepts.mysql_intro_concept import MySQLIntroConcept
 
+register_concept(MySQLIntroConcept())
 register_concept(SQLBasicsConcept())
 register_concept(DataTypesNullsConcept())
 register_concept(JoinTypesConcept())

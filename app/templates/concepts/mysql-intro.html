@@ -1,0 +1,562 @@
+<div class="space-y-6">
+    <!-- Hero: What is MySQL? -->
+    <div class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-2">{{ viz_data.what_is_mysql.title }}</h3>
+        <p class="text-emerald-100 text-lg">{{ viz_data.what_is_mysql.tagline }}</p>
+        <p class="mt-4 text-white/90">{{ viz_data.what_is_mysql.simple_explanation }}</p>
+    </div>
+
+    <!-- Query Type Detector -->
+    {% if query %}
+    <div class="bg-white border-2 rounded-lg p-4 {% if viz_data.detected_type.type == 'DDL' %}border-blue-300 bg-blue-50{% elif viz_data.detected_type.type == 'DML' %}border-green-300 bg-green-50{% elif viz_data.detected_type.type == 'DCL' %}border-orange-300 bg-orange-50{% elif viz_data.detected_type.type == 'TCL' %}border-purple-300 bg-purple-50{% else %}border-gray-300{% endif %}">
+        <div class="flex items-center justify-between mb-2">
+            <h4 class="font-semibold">Query Type Detected</h4>
+            <span class="px-4 py-2 rounded-full text-sm font-bold
+                {% if viz_data.detected_type.type == 'DDL' %}bg-blue-500 text-white
+                {% elif viz_data.detected_type.type == 'DML' %}bg-green-500 text-white
+                {% elif viz_data.detected_type.type == 'DCL' %}bg-orange-500 text-white
+                {% elif viz_data.detected_type.type == 'TCL' %}bg-purple-500 text-white
+                {% else %}bg-gray-400 text-white{% endif %}">
+                {{ viz_data.detected_type.type or 'Unknown' }} - {{ viz_data.detected_type.category or 'N/A' }}
+            </span>
+        </div>
+        <p class="text-sm text-gray-600">{{ viz_data.detected_type.description }}</p>
+        <code class="block mt-2 p-2 bg-gray-800 text-green-400 rounded text-sm overflow-x-auto">{{ query }}</code>
+    </div>
+    {% endif %}
+
+    <!-- Key Concepts: Database, Table, Row, Column -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Core Concepts</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            {% for concept in viz_data.what_is_mysql.key_concepts %}
+            <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div class="flex items-center mb-2">
+                    <div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mr-3">
+                        {% if concept.icon == 'database' %}
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                        </svg>
+                        {% elif concept.icon == 'table' %}
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                        {% elif concept.icon == 'row' %}
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16"></path>
+                        </svg>
+                        {% elif concept.icon == 'column' %}
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m6 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    <h5 class="font-bold text-lg text-gray-800">{{ concept.term }}</h5>
+                </div>
+                <p class="text-gray-700 mb-2">{{ concept.definition }}</p>
+                <p class="text-sm text-emerald-600 italic">{{ concept.analogy }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- RDBMS & Client-Server -->
+    <div class="grid md:grid-cols-2 gap-4">
+        <!-- RDBMS -->
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+            <h4 class="font-semibold text-blue-800 mb-2">{{ viz_data.what_is_mysql.rdbms.full_form }}</h4>
+            <p class="text-blue-700">{{ viz_data.what_is_mysql.rdbms.meaning }}</p>
+            <p class="text-sm text-blue-600 mt-2 italic">{{ viz_data.what_is_mysql.rdbms.example }}</p>
+        </div>
+
+        <!-- Client-Server -->
+        <div class="bg-white border rounded-lg p-4">
+            <h4 class="font-semibold mb-3">{{ viz_data.what_is_mysql.client_server.title }}</h4>
+            <div class="space-y-2">
+                {% for comp in viz_data.what_is_mysql.client_server.components %}
+                <div class="flex items-start">
+                    <span class="px-2 py-1 bg-gray-100 rounded text-xs font-mono mr-2 min-w-[80px]">{{ comp.name }}</span>
+                    <span class="text-sm text-gray-600">{{ comp.role }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Why MySQL -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-emerald-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-emerald-800">Why MySQL?</h4>
+        </div>
+        <div class="p-4">
+            <div class="flex flex-wrap gap-2">
+                {% for item in viz_data.what_is_mysql.why_mysql %}
+                <div class="bg-gray-50 border rounded-lg px-3 py-2">
+                    <span class="font-medium text-emerald-700">{{ item.point }}</span>
+                    <span class="text-gray-500 text-sm">- {{ item.detail }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Query Types Section -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-indigo-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-indigo-800">{{ viz_data.query_types.title }}</h4>
+            <p class="text-sm text-indigo-600">{{ viz_data.query_types.description }}</p>
+        </div>
+        <div class="divide-y">
+            {% for qtype in viz_data.query_types.types %}
+            <div class="p-4" x-data="{ expanded: false }">
+                <div class="flex items-center justify-between cursor-pointer" @click="expanded = !expanded">
+                    <div class="flex items-center">
+                        <span class="w-16 px-3 py-2 rounded text-sm font-bold text-white text-center
+                            {% if qtype.color == 'blue' %}bg-blue-500
+                            {% elif qtype.color == 'green' %}bg-green-500
+                            {% elif qtype.color == 'orange' %}bg-orange-500
+                            {% elif qtype.color == 'purple' %}bg-purple-500
+                            {% endif %}">{{ qtype.name }}</span>
+                        <div class="ml-4">
+                            <span class="font-medium">{{ qtype.full_name }}</span>
+                            <p class="text-sm text-gray-500">{{ qtype.purpose }}</p>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-gray-400 transform transition-transform" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </div>
+
+                <div x-show="expanded" x-transition class="mt-4 space-y-2">
+                    {% for cmd in qtype.commands %}
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="flex items-start">
+                            <code class="px-2 py-1 rounded font-bold text-sm min-w-[100px]
+                                {% if qtype.color == 'blue' %}bg-blue-100 text-blue-700
+                                {% elif qtype.color == 'green' %}bg-green-100 text-green-700
+                                {% elif qtype.color == 'orange' %}bg-orange-100 text-orange-700
+                                {% elif qtype.color == 'purple' %}bg-purple-100 text-purple-700
+                                {% endif %}">{{ cmd.command }}</code>
+                            <div class="ml-3 flex-1">
+                                <p class="text-sm text-gray-700">{{ cmd.description }}</p>
+                                <code class="text-xs text-gray-500 mt-1 block">{{ cmd.example }}</code>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-2 text-sm text-yellow-700">
+                        {{ qtype.key_point }}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- InnoDB Storage Engine -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-orange-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-orange-800">{{ viz_data.innodb_overview.title }}</h4>
+            <p class="text-sm text-orange-600">{{ viz_data.innodb_overview.description }}</p>
+        </div>
+        <div class="p-4">
+            <!-- What is a storage engine -->
+            <div class="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-200 rounded-lg p-4 mb-4">
+                <p class="font-medium text-orange-800">{{ viz_data.innodb_overview.what_is_storage_engine.simple }}</p>
+                <p class="text-sm text-orange-600 mt-1 italic">{{ viz_data.innodb_overview.what_is_storage_engine.analogy }}</p>
+            </div>
+
+            <!-- Key Features -->
+            <h5 class="font-medium mb-3">Why InnoDB is Awesome</h5>
+            <div class="grid md:grid-cols-2 gap-3 mb-4">
+                {% for feature in viz_data.innodb_overview.why_innodb %}
+                <div class="border rounded-lg p-3">
+                    <div class="font-medium text-orange-700">{{ feature.feature }}</div>
+                    <div class="text-sm text-gray-600">{{ feature.meaning }}</div>
+                    <div class="text-xs text-green-600 mt-1">{{ feature.benefit }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Key Components Diagram -->
+            <h5 class="font-medium mb-3">Key Components</h5>
+            <div class="flex flex-wrap justify-center gap-4 mb-4">
+                {% for comp in viz_data.innodb_overview.key_components %}
+                <div class="text-center p-4 rounded-lg w-32
+                    {% if comp.type == 'Memory' %}bg-green-100 border-2 border-green-400
+                    {% else %}bg-orange-100 border-2 border-orange-400{% endif %}">
+                    <div class="text-xs uppercase font-bold mb-1
+                        {% if comp.type == 'Memory' %}text-green-600{% else %}text-orange-600{% endif %}">{{ comp.type }}</div>
+                    <div class="font-bold text-gray-800">{{ comp.name }}</div>
+                    <div class="text-xs text-gray-600 mt-1">{{ comp.description }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- ACID -->
+            <h5 class="font-medium mb-3">ACID Properties</h5>
+            <div class="flex flex-wrap gap-2">
+                {% for prop in viz_data.innodb_overview.acid_breakdown %}
+                <div class="flex items-center bg-purple-50 rounded-lg px-3 py-2">
+                    <span class="w-8 h-8 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold mr-2">{{ prop.letter }}</span>
+                    <div>
+                        <div class="font-medium text-purple-800 text-sm">{{ prop.term }}</div>
+                        <div class="text-xs text-purple-600">{{ prop.meaning }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Structure -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-teal-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-teal-800">{{ viz_data.page_structure.title }}</h4>
+            <p class="text-sm text-teal-600">{{ viz_data.page_structure.description }}</p>
+        </div>
+        <div class="p-4">
+            <!-- Why Pages -->
+            <div class="bg-teal-50 rounded-lg p-3 mb-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-teal-700">{{ viz_data.page_structure.why_pages.reason }}</p>
+                        <p class="text-xs text-teal-600 mt-1 italic">{{ viz_data.page_structure.why_pages.analogy }}</p>
+                    </div>
+                    <div class="text-2xl font-bold text-teal-800">{{ viz_data.page_structure.why_pages.size }}</div>
+                </div>
+            </div>
+
+            <!-- Page Structure Diagram -->
+            <div class="border-2 border-gray-300 rounded-lg overflow-hidden max-w-md mx-auto">
+                {% for section in viz_data.page_structure.sections %}
+                <div class="flex items-center border-b last:border-b-0 p-2
+                    {% if section.color == 'blue' %}bg-blue-100
+                    {% elif section.color == 'teal' %}bg-teal-100
+                    {% elif section.color == 'green' %}bg-green-100
+                    {% elif section.color == 'gray' %}bg-gray-100
+                    {% elif section.color == 'orange' %}bg-orange-100
+                    {% elif section.color == 'red' %}bg-red-100
+                    {% endif %}" x-data="{ showDetails: false }">
+                    <div class="flex-1 cursor-pointer" @click="showDetails = !showDetails">
+                        <div class="flex items-center justify-between">
+                            <span class="font-medium text-sm">{{ section.name }}</span>
+                            <span class="text-xs text-gray-500">{{ section.size }}</span>
+                        </div>
+                        <p class="text-xs text-gray-600">{{ section.purpose }}</p>
+                        <div x-show="showDetails" x-transition class="mt-2 text-xs text-gray-500">
+                            <ul class="list-disc list-inside">
+                                {% for item in section.contains %}
+                                <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <p class="text-sm text-center text-gray-500 mt-4 italic">{{ viz_data.page_structure.fun_fact }}</p>
+        </div>
+    </div>
+
+    <!-- Read/Write Flow Interactive -->
+    <div class="bg-white border rounded-lg overflow-hidden" id="read-write-demo">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">How Reads & Writes Work</h4>
+            <p class="text-sm text-gray-600">Watch data flow through MySQL's architecture</p>
+        </div>
+        <div class="p-4" x-data="readWriteFlow()">
+            <!-- Mode Toggle -->
+            <div class="flex justify-center mb-6">
+                <div class="inline-flex rounded-lg border border-gray-200 p-1">
+                    <button @click="mode = 'read'; reset()"
+                        :class="mode === 'read' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700'"
+                        class="px-4 py-2 rounded-l-md text-sm font-medium transition-colors">
+                        SELECT (Read)
+                    </button>
+                    <button @click="mode = 'write'; reset()"
+                        :class="mode === 'write' ? 'bg-green-500 text-white' : 'bg-white text-gray-700'"
+                        class="px-4 py-2 rounded-r-md text-sm font-medium transition-colors">
+                        INSERT (Write)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Architecture Diagram -->
+            <div class="relative bg-gray-100 rounded-lg p-4 min-h-[280px]">
+                <!-- Components -->
+                <div class="flex flex-wrap justify-center gap-6 items-start">
+                    <!-- Client -->
+                    <div class="text-center transition-all duration-300"
+                         :class="activeComponent === 'client' ? 'scale-110' : ''">
+                        <div class="w-24 h-24 rounded-lg flex items-center justify-center transition-all duration-300"
+                             :class="activeComponent === 'client' ? 'bg-blue-500 ring-4 ring-blue-300 animate-pulse' : 'bg-blue-200'">
+                            <svg class="w-10 h-10" :class="activeComponent === 'client' ? 'text-white' : 'text-blue-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="text-sm font-medium mt-2">Client</div>
+                    </div>
+
+                    <!-- Parser -->
+                    <div class="text-center transition-all duration-300"
+                         :class="activeComponent === 'parser' ? 'scale-110' : ''">
+                        <div class="w-24 h-24 rounded-lg flex items-center justify-center transition-all duration-300"
+                             :class="activeComponent === 'parser' ? 'bg-gray-500 ring-4 ring-gray-300 animate-pulse' : 'bg-gray-200'">
+                            <svg class="w-10 h-10" :class="activeComponent === 'parser' ? 'text-white' : 'text-gray-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="text-sm font-medium mt-2">Parser/Optimizer</div>
+                    </div>
+
+                    <!-- Buffer Pool -->
+                    <div class="text-center transition-all duration-300"
+                         :class="activeComponent === 'buffer_pool' ? 'scale-110' : ''">
+                        <div class="w-24 h-24 rounded-lg flex items-center justify-center transition-all duration-300"
+                             :class="activeComponent === 'buffer_pool' ? 'bg-green-500 ring-4 ring-green-300 animate-pulse' : 'bg-green-200'">
+                            <svg class="w-10 h-10" :class="activeComponent === 'buffer_pool' ? 'text-white' : 'text-green-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                            </svg>
+                        </div>
+                        <div class="text-sm font-medium mt-2">Buffer Pool</div>
+                        <div class="text-xs text-gray-500">(RAM)</div>
+                    </div>
+
+                    <!-- Redo Log (only visible in write mode) -->
+                    <div class="text-center transition-all duration-300"
+                         :class="activeComponent === 'redo_log' ? 'scale-110' : ''"
+                         x-show="mode === 'write'" x-transition>
+                        <div class="w-24 h-24 rounded-lg flex items-center justify-center transition-all duration-300"
+                             :class="activeComponent === 'redo_log' ? 'bg-orange-500 ring-4 ring-orange-300 animate-pulse' : 'bg-orange-200'">
+                            <svg class="w-10 h-10" :class="activeComponent === 'redo_log' ? 'text-white' : 'text-orange-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                        </div>
+                        <div class="text-sm font-medium mt-2">Redo Log</div>
+                        <div class="text-xs text-orange-600">(WAL)</div>
+                    </div>
+
+                    <!-- Disk -->
+                    <div class="text-center transition-all duration-300"
+                         :class="activeComponent === 'disk' ? 'scale-110' : ''">
+                        <div class="w-24 h-24 rounded-lg flex items-center justify-center transition-all duration-300"
+                             :class="activeComponent === 'disk' ? (mode === 'write' ? 'bg-purple-500 ring-4 ring-purple-300' : 'bg-gray-700 ring-4 ring-gray-500') + ' animate-pulse' : 'bg-gray-300'">
+                            <svg class="w-10 h-10" :class="activeComponent === 'disk' ? 'text-white' : 'text-gray-600'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+                            </svg>
+                        </div>
+                        <div class="text-sm font-medium mt-2">Data Files</div>
+                        <div class="text-xs text-gray-500">(Disk)</div>
+                    </div>
+                </div>
+
+                <!-- Step Description -->
+                <div class="mt-6 text-center">
+                    <div class="inline-block bg-white rounded-lg px-6 py-3 shadow-md border min-w-[300px]">
+                        <div class="flex items-center justify-center space-x-2">
+                            <span class="w-6 h-6 rounded-full bg-indigo-500 text-white text-sm flex items-center justify-center font-bold" x-text="currentStep + 1">1</span>
+                            <span class="font-medium" x-text="getCurrentStepTitle()">Click Play to Start</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1" x-text="getCurrentStepDescription()">Watch how MySQL processes queries step by step</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex justify-center items-center space-x-4 mt-4">
+                <button @click="prevStep()"
+                    :disabled="currentStep === 0 || isAnimating"
+                    class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Previous
+                </button>
+                <button @click="isAnimating ? pause() : animate()"
+                    class="px-6 py-2 text-white rounded font-medium bg-indigo-500 hover:bg-indigo-600"
+                    :class="isAnimating ? 'bg-red-500 hover:bg-red-600' : 'bg-indigo-500 hover:bg-indigo-600'">
+                    <span x-show="!isAnimating">Play Animation</span>
+                    <span x-show="isAnimating">Pause</span>
+                </button>
+                <button @click="nextStep()"
+                    :disabled="currentStep >= getSteps().length - 1 || isAnimating"
+                    class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                    Next
+                </button>
+                <button @click="reset()"
+                    class="px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 text-gray-600">
+                    Reset
+                </button>
+            </div>
+
+            <!-- Step Progress -->
+            <div class="flex justify-center mt-4 space-x-2">
+                <template x-for="(step, index) in getSteps()" :key="index">
+                    <button class="w-3 h-3 rounded-full transition-all duration-300"
+                         :class="index === currentStep ? 'bg-indigo-500 scale-125' : index < currentStep ? 'bg-indigo-300' : 'bg-gray-300'"
+                         @click="goToStep(index)">
+                    </button>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sample Queries by Type -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Try These Sample Queries</h4>
+            <p class="text-sm text-gray-500">Click to copy, then paste in the query box above</p>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for type, queries in viz_data.sample_queries_by_type.items() %}
+            <div>
+                <h5 class="font-medium mb-2 px-2 py-1 rounded text-sm inline-block
+                    {% if type == 'DDL' %}bg-blue-100 text-blue-700
+                    {% elif type == 'DML' %}bg-green-100 text-green-700
+                    {% elif type == 'DCL' %}bg-orange-100 text-orange-700
+                    {% elif type == 'TCL' %}bg-purple-100 text-purple-700
+                    {% endif %}">{{ type }}</h5>
+                <div class="space-y-2">
+                    {% for q in queries %}
+                    <code class="block text-xs p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors"
+                          onclick="navigator.clipboard.writeText(this.innerText); this.classList.add('ring-2', 'ring-green-400'); setTimeout(() => this.classList.remove('ring-2', 'ring-green-400'), 500);">{{ q }}</code>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Learning Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="{{ url_for('concepts.get_step', concept_name=concept.name, step_num=current_step - 1) }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="{{ url_for('concepts.get_step', concept_name=concept.name, step_num=current_step + 1) }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-emerald-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Alpine.js component definition and initialization -->
+<script>
+// Define the component
+window.readWriteFlow = function() {
+    return {
+        mode: 'read',
+        currentStep: 0,
+        isAnimating: false,
+        activeComponent: null,
+        animationTimer: null,
+        readSteps: [
+            { component: 'client', title: 'Client Sends Query', description: 'Your application sends a SELECT query to MySQL' },
+            { component: 'parser', title: 'Query Parsing & Optimization', description: 'MySQL parses SQL and creates an execution plan' },
+            { component: 'buffer_pool', title: 'Check Buffer Pool', description: 'Look for the needed data page in memory cache' },
+            { component: 'disk', title: 'Read from Disk', description: 'If page not in buffer pool, read it from the data file' },
+            { component: 'buffer_pool', title: 'Load into Buffer Pool', description: 'The page is loaded into buffer pool for future queries' },
+            { component: 'client', title: 'Return Results', description: 'MySQL extracts the matching rows and sends them back' }
+        ],
+        writeSteps: [
+            { component: 'client', title: 'Client Sends Write', description: 'Your application sends an INSERT, UPDATE, or DELETE' },
+            { component: 'buffer_pool', title: 'Find/Load Page', description: 'Locate the page to modify (load from disk if needed)' },
+            { component: 'redo_log', title: 'Write to Redo Log', description: 'Write-Ahead Log: record the change FIRST for durability' },
+            { component: 'buffer_pool', title: 'Modify Page', description: 'Apply the change to the in-memory page (now dirty)' },
+            { component: 'client', title: 'Acknowledge', description: 'On COMMIT, tell the client the write succeeded' },
+            { component: 'disk', title: 'Background Flush', description: 'Later, dirty pages are written to disk (checkpoint)' }
+        ],
+        getSteps() {
+            return this.mode === 'read' ? this.readSteps : this.writeSteps;
+        },
+        getCurrentStepTitle() {
+            const step = this.getSteps()[this.currentStep];
+            return step ? step.title : 'Click Play to Start';
+        },
+        getCurrentStepDescription() {
+            const step = this.getSteps()[this.currentStep];
+            return step ? step.description : 'Watch how MySQL processes queries step by step';
+        },
+        nextStep() {
+            if (this.currentStep < this.getSteps().length - 1) {
+                this.currentStep++;
+                this.activeComponent = this.getSteps()[this.currentStep].component;
+            }
+        },
+        prevStep() {
+            if (this.currentStep > 0) {
+                this.currentStep--;
+                this.activeComponent = this.getSteps()[this.currentStep].component;
+            }
+        },
+        goToStep(index) {
+            this.currentStep = index;
+            this.activeComponent = this.getSteps()[this.currentStep].component;
+        },
+        animate() {
+            this.isAnimating = true;
+            this.activeComponent = this.getSteps()[this.currentStep].component;
+            const self = this;
+            this.animationTimer = setInterval(function() {
+                if (self.currentStep < self.getSteps().length - 1) {
+                    self.currentStep++;
+                    self.activeComponent = self.getSteps()[self.currentStep].component;
+                } else {
+                    self.pause();
+                }
+            }, 1500);
+        },
+        pause() {
+            this.isAnimating = false;
+            if (this.animationTimer) {
+                clearInterval(this.animationTimer);
+                this.animationTimer = null;
+            }
+        },
+        reset() {
+            this.pause();
+            this.currentStep = 0;
+            this.activeComponent = null;
+        }
+    };
+};
+
+// Load and initialize Alpine.js
+(function() {
+    function initAlpine() {
+        const el = document.getElementById('read-write-demo');
+        if (el && window.Alpine) {
+            window.Alpine.initTree(el);
+        }
+    }
+
+    if (window.Alpine) {
+        // Alpine already loaded, just init
+        initAlpine();
+    } else {
+        // Load Alpine.js
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js';
+        script.defer = true;
+        document.head.appendChild(script);
+    }
+})();
+</script>
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}
