@@ -1,0 +1,152 @@
+{% if viz_data.error %}
+<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+    <p class="text-red-700">{{ viz_data.error }}</p>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Issues detected -->
+    {% if viz_data.issues %}
+    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <h3 class="font-bold text-red-800 mb-3">Issues Detected</h3>
+        <div class="space-y-2">
+            {% for issue in viz_data.issues %}
+            <div class="flex items-start bg-white rounded p-3 border border-red-100">
+                <span class="text-lg mr-2">{% if issue.severity == 'error' %}🔴{% else %}🟡{% endif %}</span>
+                <div>
+                    <div class="font-medium">{{ issue.issue }}</div>
+                    <div class="text-sm text-gray-600">Fix: {{ issue.fix }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div class="flex items-center">
+            <span class="text-2xl mr-3">✅</span>
+            <div>
+                <h3 class="font-bold text-green-800">No Major Issues Detected</h3>
+                <p class="text-green-700 text-sm">Query looks reasonable. Use EXPLAIN for actual performance analysis.</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Detected patterns -->
+    {% if viz_data.patterns %}
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-orange-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-orange-800">Anti-Patterns Found</h4>
+        </div>
+        <div class="p-4 space-y-4">
+            {% for pattern in viz_data.patterns %}
+            <div class="border-b pb-4 last:border-b-0">
+                <h5 class="font-medium text-orange-700 mb-2">{{ pattern.name }}</h5>
+                <div class="grid md:grid-cols-2 gap-3">
+                    <div class="bg-red-50 rounded p-3">
+                        <span class="text-xs text-red-500 font-medium">Bad:</span>
+                        <code class="block text-sm mt-1 text-red-700">{{ pattern.bad }}</code>
+                    </div>
+                    <div class="bg-green-50 rounded p-3">
+                        <span class="text-xs text-green-500 font-medium">Good:</span>
+                        <code class="block text-sm mt-1 text-green-700">{{ pattern.good }}</code>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600 mt-2">{{ pattern.why }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Index recommendations -->
+    {% if viz_data.index_recommendations %}
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-blue-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-blue-800">Index Recommendations</h4>
+        </div>
+        <div class="p-4 space-y-3">
+            {% for rec in viz_data.index_recommendations %}
+            <div class="bg-gray-50 rounded p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">{{ rec.type }}</span>
+                    <span class="text-xs text-gray-500">{{ rec.reason }}</span>
+                </div>
+                <code class="text-sm text-gray-800">{{ rec.suggestion }}</code>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- All patterns reference -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Common Anti-Patterns Reference</h4>
+        </div>
+        <div class="divide-y">
+            {% for pattern in viz_data.all_patterns %}
+            <div class="p-4 {% if pattern.detected %}bg-yellow-50{% endif %}">
+                <div class="flex items-center justify-between mb-2">
+                    <h5 class="font-medium">{{ pattern.name }}</h5>
+                    <span class="text-xs px-2 py-1 rounded
+                        {% if pattern.impact == 'high' %}bg-red-100 text-red-700
+                        {% elif pattern.impact == 'medium' %}bg-yellow-100 text-yellow-700
+                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                        Impact: {{ pattern.impact }}
+                    </span>
+                </div>
+                <p class="text-sm text-gray-600">{{ pattern.why }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Optimization checklist -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-purple-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-purple-800">Optimization Checklist</h4>
+        </div>
+        <div class="p-4">
+            <div class="space-y-2">
+                {% for item in viz_data.checklist %}
+                <label class="flex items-center text-sm">
+                    <input type="checkbox" class="mr-3 rounded">
+                    <span class="{% if item.priority == 1 %}font-medium{% endif %}">{{ item.item }}</span>
+                    <span class="ml-auto text-xs text-gray-400">P{{ item.priority }}</span>
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/optimization/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>◀ Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/optimization/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next ▶</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-indigo-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

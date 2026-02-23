@@ -1,0 +1,379 @@
+<div class="space-y-6">
+    <!-- Unnormalized example -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-red-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-red-800">Before: Unnormalized Data</h4>
+            <p class="text-sm text-red-600">{{ viz_data.unnormalized.description }}</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-red-50">
+                    <tr>
+                        {% for key in viz_data.unnormalized.data[0].keys() %}
+                        <th class="px-3 py-2 text-left text-xs font-medium text-red-700">{{ key }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in viz_data.unnormalized.data %}
+                    <tr class="border-b">
+                        {% for val in row.values() %}
+                        <td class="px-3 py-2 font-mono text-xs">{{ val }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="p-4 bg-red-50">
+            <h5 class="font-medium text-red-700 mb-2">Problems:</h5>
+            <ul class="space-y-1">
+                {% for problem in viz_data.unnormalized.problems %}
+                <li class="text-sm text-red-600 flex items-start">
+                    <span class="mr-2">❌</span>{{ problem }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Normal forms progression -->
+    <div class="grid md:grid-cols-2 gap-4">
+        {% for nf in viz_data.normal_forms %}
+        <div class="bg-white border rounded-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-3">
+                <h4 class="font-bold">{{ nf.form }}: {{ nf.name }}</h4>
+            </div>
+            <div class="p-4">
+                <p class="text-sm font-medium text-gray-800 mb-3">{{ nf.rule }}</p>
+
+                {% if nf.violation_example.bad %}
+                <div class="bg-red-50 rounded p-3 mb-3">
+                    <span class="text-xs text-red-500 font-medium">Violation:</span>
+                    <div class="text-sm mt-1">
+                        {% if nf.violation_example.bad is mapping %}
+                        <code>{{ nf.violation_example.bad }}</code>
+                        {% else %}
+                        <code>{{ nf.violation_example.bad }}</code>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if nf.violation_example.table %}
+                <div class="bg-yellow-50 rounded p-3 mb-3">
+                    <code class="text-xs">{{ nf.violation_example.table }}</code>
+                    <p class="text-xs text-yellow-700 mt-1">{{ nf.violation_example.problem }}</p>
+                </div>
+                {% endif %}
+
+                <div class="bg-green-50 rounded p-3">
+                    <span class="text-xs text-green-500 font-medium">Fix:</span>
+                    <p class="text-sm text-green-700 mt-1">{{ nf.fix }}</p>
+                </div>
+
+                <p class="text-xs text-gray-500 mt-3">✓ {{ nf.achieved_by }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Normalized schema -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-green-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-green-800">After: Normalized Schema (3NF)</h4>
+        </div>
+        <div class="p-4">
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                {% for table in viz_data.normalized.tables %}
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-gray-50 px-3 py-2 border-b">
+                        <h5 class="font-semibold text-sm">{{ table.name }}</h5>
+                        <code class="text-xs text-gray-500">{{ table.columns | join(', ') }}</code>
+                    </div>
+                    <table class="w-full text-xs">
+                        <tbody>
+                            {% for row in table.sample %}
+                            <tr class="border-b">
+                                {% for val in row.values() %}
+                                <td class="px-2 py-1 font-mono">{{ val }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="bg-green-50 rounded p-4">
+                <h5 class="font-medium text-green-700 mb-2">Benefits:</h5>
+                <ul class="space-y-1">
+                    {% for benefit in viz_data.normalized.benefits %}
+                    <li class="text-sm text-green-600 flex items-start">
+                        <span class="mr-2">✓</span>{{ benefit }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Denormalization -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-yellow-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-yellow-800">{{ viz_data.denormalization.title }}</h4>
+            <p class="text-sm text-yellow-600">{{ viz_data.denormalization.description }}</p>
+        </div>
+        <div class="p-4">
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <h5 class="font-medium text-sm mb-2 text-green-700">Valid Reasons:</h5>
+                    <ul class="space-y-1">
+                        {% for reason in viz_data.denormalization.valid_reasons %}
+                        <li class="text-sm text-gray-600 flex items-start">
+                            <span class="text-green-500 mr-2">✓</span>{{ reason }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-medium text-sm mb-2 text-red-700">Trade-offs:</h5>
+                    <ul class="space-y-1">
+                        {% for tradeoff in viz_data.denormalization.tradeoffs %}
+                        <li class="text-sm text-gray-600 flex items-start">
+                            <span class="text-red-500 mr-2">⚠</span>{{ tradeoff }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <h5 class="font-medium text-sm mb-2">Techniques:</h5>
+            <div class="grid md:grid-cols-3 gap-3">
+                {% for tech in viz_data.denormalization.techniques %}
+                <div class="bg-gray-50 rounded p-3">
+                    <div class="font-medium text-sm">{{ tech.name }}</div>
+                    <div class="text-xs text-gray-500">{{ tech.example }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Database Constraints -->
+    {% if viz_data.constraints %}
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-blue-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-blue-800">{{ viz_data.constraints.title }}</h4>
+            <p class="text-sm text-blue-600">{{ viz_data.constraints.description }}</p>
+        </div>
+        <div class="p-4 space-y-4">
+            {% for constraint in viz_data.constraints.types %}
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-50 px-4 py-2 flex items-center justify-between">
+                    <span class="font-bold text-blue-700">{{ constraint.name }}</span>
+                    <code class="text-xs bg-white px-2 py-1 rounded">{{ constraint.syntax }}</code>
+                </div>
+                <div class="p-4">
+                    <p class="text-sm text-gray-700 mb-2">{{ constraint.description }}</p>
+                    <div class="bg-gray-100 rounded p-2 font-mono text-xs mb-2">{{ constraint.example }}</div>
+                    {% if constraint.cascade_options %}
+                    <div class="mt-3">
+                        <h6 class="text-sm font-medium text-gray-700 mb-2">CASCADE Options:</h6>
+                        <div class="grid grid-cols-2 gap-2">
+                            {% for opt in constraint.cascade_options %}
+                            <div class="bg-gray-50 rounded p-2 text-xs">
+                                <code class="text-blue-600">{{ opt.action }}</code>
+                                <div class="text-gray-600 mt-1">{{ opt.effect }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if constraint.note %}
+                    <div class="mt-2 text-xs text-yellow-700 bg-yellow-50 p-2 rounded">{{ constraint.note }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Generated Columns -->
+    {% if viz_data.generated_columns %}
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-purple-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-purple-800">{{ viz_data.generated_columns.title }}</h4>
+            <p class="text-sm text-purple-600">{{ viz_data.generated_columns.description }}</p>
+        </div>
+        <div class="p-4">
+            <!-- Types comparison -->
+            <div class="grid md:grid-cols-2 gap-4 mb-6">
+                {% for type in viz_data.generated_columns.types %}
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-purple-100 px-4 py-2 font-bold text-purple-800">{{ type.name }}</div>
+                    <div class="p-4">
+                        <div class="text-sm text-gray-600 mb-2">{{ type.storage }}</div>
+                        <div class="bg-gray-100 rounded p-2 font-mono text-xs mb-3">{{ type.syntax }}</div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="bg-green-50 rounded p-2">
+                                <span class="font-medium text-green-700">Pros:</span>
+                                <ul class="mt-1 text-green-700">
+                                    {% for pro in type.pros %}
+                                    <li>+ {{ pro }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="bg-red-50 rounded p-2">
+                                <span class="font-medium text-red-700">Cons:</span>
+                                <ul class="mt-1 text-red-700">
+                                    {% for con in type.cons %}
+                                    <li>- {{ con }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Examples -->
+            <h5 class="font-medium text-sm mb-2">Examples:</h5>
+            <div class="space-y-3">
+                {% for ex in viz_data.generated_columns.examples %}
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <div class="font-medium text-sm text-gray-800">{{ ex.name }}</div>
+                    <code class="text-xs bg-white px-2 py-1 rounded block mt-1">{{ ex.sql }}</code>
+                    <div class="text-xs text-gray-500 mt-1">{{ ex.use_case }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Extended Denormalization Comparison -->
+    {% if viz_data.denormalization_extended %}
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-orange-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-orange-800">{{ viz_data.denormalization_extended.title }}</h4>
+            <p class="text-sm text-orange-600">{{ viz_data.denormalization_extended.description }}</p>
+        </div>
+        <div class="p-4">
+            <!-- When to / When not to -->
+            <div class="grid md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-green-50 rounded-lg p-4">
+                    <h5 class="font-bold text-green-700 mb-2">When to Denormalize</h5>
+                    <ul class="text-sm space-y-1">
+                        {% for item in viz_data.denormalization_extended.when_to_denormalize %}
+                        <li class="flex items-start gap-2">
+                            <span class="text-green-500">+</span>
+                            <span>{{ item }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="bg-red-50 rounded-lg p-4">
+                    <h5 class="font-bold text-red-700 mb-2">When NOT to Denormalize</h5>
+                    <ul class="text-sm space-y-1">
+                        {% for item in viz_data.denormalization_extended.when_not_to_denormalize %}
+                        <li class="flex items-start gap-2">
+                            <span class="text-red-500">-</span>
+                            <span>{{ item }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Techniques with examples -->
+            <h5 class="font-medium text-sm mb-2">Techniques with Examples:</h5>
+            <div class="space-y-4 mb-6">
+                {% for tech in viz_data.denormalization_extended.techniques %}
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-gray-100 px-4 py-2">
+                        <span class="font-medium">{{ tech.name }}</span>
+                        <span class="text-sm text-gray-600 ml-2">{{ tech.description }}</span>
+                    </div>
+                    <div class="p-4 grid md:grid-cols-2 gap-4">
+                        <div class="bg-gray-50 rounded p-3">
+                            <div class="text-xs text-gray-500 mb-1">Normalized Query:</div>
+                            <code class="text-xs">{{ tech.example.normalized | default(tech.example.realtime) | default(tech.example.computed) }}</code>
+                        </div>
+                        <div class="bg-orange-50 rounded p-3">
+                            <div class="text-xs text-orange-500 mb-1">Denormalized:</div>
+                            <code class="text-xs">{{ tech.example.denormalized | default(tech.example.summary) | default(tech.example.cached) }}</code>
+                        </div>
+                    </div>
+                    <div class="px-4 pb-4">
+                        <div class="text-xs text-orange-700 bg-orange-100 rounded p-2">Tradeoff: {{ tech.tradeoff }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Schema Comparison -->
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-100 px-4 py-2 font-medium">{{ viz_data.denormalization_extended.schema_comparison.title }}</div>
+                <div class="p-4">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="border rounded-lg p-4 bg-green-50">
+                            <h6 class="font-bold text-green-700 mb-3">Normalized</h6>
+                            <div class="space-y-2 text-sm">
+                                <div><span class="text-gray-500">Tables:</span> {{ viz_data.denormalization_extended.schema_comparison.normalized.tables | join(', ') }}</div>
+                                <div><span class="text-gray-500">JOINs for report:</span> {{ viz_data.denormalization_extended.schema_comparison.normalized.joins_for_report }}</div>
+                                <div><span class="text-gray-500">Storage:</span> {{ viz_data.denormalization_extended.schema_comparison.normalized.storage }}</div>
+                                <div><span class="text-gray-500">Write speed:</span> {{ viz_data.denormalization_extended.schema_comparison.normalized.write_speed }}</div>
+                                <div><span class="text-gray-500">Read speed:</span> {{ viz_data.denormalization_extended.schema_comparison.normalized.read_speed }}</div>
+                                <div><span class="text-gray-500">Consistency:</span> {{ viz_data.denormalization_extended.schema_comparison.normalized.consistency }}</div>
+                            </div>
+                        </div>
+                        <div class="border rounded-lg p-4 bg-orange-50">
+                            <h6 class="font-bold text-orange-700 mb-3">Denormalized</h6>
+                            <div class="space-y-2 text-sm">
+                                <div><span class="text-gray-500">Tables:</span> {{ viz_data.denormalization_extended.schema_comparison.denormalized.tables | join(', ') }}</div>
+                                <div><span class="text-gray-500">JOINs for report:</span> {{ viz_data.denormalization_extended.schema_comparison.denormalized.joins_for_report }}</div>
+                                <div><span class="text-gray-500">Storage:</span> {{ viz_data.denormalization_extended.schema_comparison.denormalized.storage }}</div>
+                                <div><span class="text-gray-500">Write speed:</span> {{ viz_data.denormalization_extended.schema_comparison.denormalized.write_speed }}</div>
+                                <div><span class="text-gray-500">Read speed:</span> {{ viz_data.denormalization_extended.schema_comparison.denormalized.read_speed }}</div>
+                                <div><span class="text-gray-500">Consistency:</span> {{ viz_data.denormalization_extended.schema_comparison.denormalized.consistency }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/normalization/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>◀ Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/normalization/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next ▶</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-indigo-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

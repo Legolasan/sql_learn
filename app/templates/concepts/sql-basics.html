@@ -1,0 +1,327 @@
+<div class="space-y-6">
+    <!-- Hero: SELECT Statement Structure -->
+    <div class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-2">{{ viz_data.select_syntax.title }}</h3>
+        <pre class="bg-white/20 rounded-lg p-4 text-sm font-mono overflow-x-auto mt-4">{{ viz_data.select_syntax.basic_syntax }}</pre>
+
+        <div class="mt-4">
+            <h4 class="font-semibold mb-2">Execution Order (not the same as writing order!)</h4>
+            <div class="flex flex-wrap gap-2">
+                {% for step in viz_data.select_syntax.execution_order %}
+                <div class="bg-white/20 rounded px-3 py-1">
+                    <span class="font-bold">{{ step.step }}.</span>
+                    <span class="font-medium">{{ step.clause }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Query Analysis -->
+    {% if query %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 class="font-semibold text-blue-800 mb-2">Your Query Components</h4>
+        <div class="flex flex-wrap gap-2">
+            {% for comp, present in viz_data.components.items() %}
+            <span class="px-3 py-1 rounded-full text-sm font-medium
+                {% if present %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-400{% endif %}">
+                {{ comp | upper }}
+                {% if present %}✓{% else %}-{% endif %}
+            </span>
+            {% endfor %}
+        </div>
+        {% if viz_data.operators_used %}
+        <div class="mt-2 text-sm text-blue-700">
+            <strong>Operators used:</strong> {{ viz_data.operators_used | join(', ') }}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- SELECT Variations -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">SELECT Variations</h4>
+        </div>
+        <div class="p-4">
+            <div class="grid md:grid-cols-2 gap-3">
+                {% for variation in viz_data.select_syntax.select_variations %}
+                <div class="border rounded-lg p-3">
+                    <code class="text-sm bg-gray-100 px-2 py-1 rounded block mb-2">{{ variation.syntax }}</code>
+                    <div class="text-sm text-gray-600">{{ variation.meaning }}</div>
+                    <div class="text-xs text-blue-600 mt-1">{{ variation.note }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- WHERE Operators -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-orange-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-orange-800">WHERE Clause Operators</h4>
+        </div>
+        <div class="divide-y">
+            {% for category in viz_data.where_operators %}
+            <div class="p-4">
+                <h5 class="font-medium text-gray-800 mb-3">{{ category.category }}</h5>
+                <div class="space-y-2">
+                    {% for op in category.operators %}
+                    <div class="flex items-start text-sm">
+                        <code class="bg-orange-100 text-orange-700 px-2 py-1 rounded font-bold min-w-[80px]">{{ op.op }}</code>
+                        <div class="ml-3 flex-1">
+                            <div class="text-gray-600">{{ op.description }}</div>
+                            <code class="text-xs text-gray-500">{{ op.example }}</code>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if category.warning %}
+                <div class="mt-3 bg-red-50 border border-red-200 rounded p-2 text-sm text-red-700">
+                    {{ category.warning }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Pattern Matching -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-purple-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-purple-800">{{ viz_data.pattern_matching.title }}</h4>
+        </div>
+        <div class="p-4">
+            <!-- LIKE -->
+            <div class="mb-6">
+                <h5 class="font-medium mb-2">LIKE - {{ viz_data.pattern_matching.like.description }}</h5>
+
+                <div class="grid md:grid-cols-2 gap-3 mb-4">
+                    {% for wc in viz_data.pattern_matching.like.wildcards %}
+                    <div class="border rounded p-3">
+                        <div class="flex items-center">
+                            <code class="text-2xl font-bold text-purple-600 mr-3">{{ wc.char }}</code>
+                            <div>
+                                <div class="font-medium text-sm">{{ wc.meaning }}</div>
+                                <div class="text-xs text-gray-500">{{ wc.example }}</div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h6 class="text-sm font-medium text-gray-600 mb-2">Examples:</h6>
+                <div class="grid md:grid-cols-3 gap-2">
+                    {% for ex in viz_data.pattern_matching.like.examples %}
+                    <div class="bg-purple-50 rounded p-2 text-sm">
+                        <code class="text-purple-700">{{ ex.pattern }}</code>
+                        <div class="text-xs text-gray-600">{{ ex.matches }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- REGEXP -->
+            <div class="border-t pt-4">
+                <h5 class="font-medium mb-2">REGEXP - {{ viz_data.pattern_matching.regexp.description }}</h5>
+                <code class="text-sm bg-gray-100 px-2 py-1 rounded">{{ viz_data.pattern_matching.regexp.syntax }}</code>
+
+                <div class="grid md:grid-cols-3 gap-2 mt-3">
+                    {% for ex in viz_data.pattern_matching.regexp.examples %}
+                    <div class="bg-gray-50 rounded p-2 text-sm">
+                        <code class="text-gray-700">{{ ex.pattern }}</code>
+                        <div class="text-xs text-gray-500">{{ ex.meaning }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="text-xs text-gray-500 mt-2">{{ viz_data.pattern_matching.regexp.note }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDER BY & LIMIT -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-blue-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-blue-800">{{ viz_data.order_limit.title }}</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            <!-- ORDER BY -->
+            <div>
+                <h5 class="font-medium mb-2">ORDER BY</h5>
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded block mb-3">{{ viz_data.order_limit.order_by.syntax }}</code>
+
+                <div class="space-y-2">
+                    {% for ex in viz_data.order_limit.order_by.examples %}
+                    <div class="text-sm">
+                        <code class="text-blue-600">{{ ex.sql }}</code>
+                        <span class="text-gray-500 ml-2">{{ ex.meaning }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="text-xs text-gray-500 mt-2">{{ viz_data.order_limit.order_by.nulls }}</p>
+            </div>
+
+            <!-- LIMIT -->
+            <div>
+                <h5 class="font-medium mb-2">LIMIT & OFFSET</h5>
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded block mb-3">{{ viz_data.order_limit.limit.syntax }}</code>
+
+                <div class="space-y-2">
+                    {% for ex in viz_data.order_limit.limit.examples %}
+                    <div class="text-sm">
+                        <code class="text-blue-600">{{ ex.sql }}</code>
+                        <span class="text-gray-500 ml-2">{{ ex.meaning }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="bg-blue-50 rounded p-2 mt-3 text-xs">
+                    <strong>Pagination:</strong> {{ viz_data.order_limit.limit.pagination_formula }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aliases & Quoting -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">{{ viz_data.aliases.title }}</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            <!-- Column Aliases -->
+            <div>
+                <h5 class="font-medium mb-2">Column Aliases</h5>
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded block mb-3">{{ viz_data.aliases.column_aliases.syntax }}</code>
+
+                <div class="space-y-2">
+                    {% for ex in viz_data.aliases.column_aliases.examples %}
+                    <div class="text-sm flex items-center">
+                        <code class="text-gray-500 line-through">{{ ex.before }}</code>
+                        <span class="mx-2">→</span>
+                        <code class="text-green-600">{{ ex.after }}</code>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Table Aliases -->
+            <div>
+                <h5 class="font-medium mb-2">Table Aliases</h5>
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded block mb-3">{{ viz_data.aliases.table_aliases.syntax }}</code>
+
+                <div class="space-y-2">
+                    {% for ex in viz_data.aliases.table_aliases.examples %}
+                    <div class="text-sm">
+                        <code class="text-blue-600">{{ ex.sql }}</code>
+                        <span class="text-gray-500 ml-2">→ {{ ex.usage }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quoting -->
+        <div class="border-t px-4 py-3 bg-yellow-50">
+            <h5 class="font-medium text-yellow-800 mb-2">Quoting Rules</h5>
+            <div class="grid md:grid-cols-2 gap-2 text-sm">
+                <div><strong>Strings:</strong> {{ viz_data.aliases.quoting.strings }}</div>
+                <div><strong>Identifiers:</strong> {{ viz_data.aliases.quoting.identifiers }}</div>
+            </div>
+            <div class="text-xs text-yellow-700 mt-2">
+                <strong>Reserved words:</strong> {{ viz_data.aliases.quoting.reserved_words | join(', ') }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Common Mistakes -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-red-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-red-800">Common Mistakes to Avoid</h4>
+        </div>
+        <div class="divide-y">
+            {% for mistake in viz_data.common_mistakes %}
+            <div class="p-4">
+                <h5 class="font-medium text-red-700 mb-2">{{ mistake.mistake }}</h5>
+                <div class="grid md:grid-cols-2 gap-3 mb-2">
+                    <div class="bg-red-50 rounded p-2">
+                        <span class="text-xs text-red-500 font-medium">Wrong:</span>
+                        <code class="block text-sm text-red-700 mt-1">{{ mistake.wrong }}</code>
+                    </div>
+                    <div class="bg-green-50 rounded p-2">
+                        <span class="text-xs text-green-500 font-medium">Right:</span>
+                        <code class="block text-sm text-green-700 mt-1">{{ mistake.right }}</code>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600">{{ mistake.why }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Quick Reference -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-indigo-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-indigo-800">{{ viz_data.quick_reference.title }}</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-3 gap-4">
+            {% for section in viz_data.quick_reference.sections %}
+            <div>
+                <h5 class="font-medium text-sm text-gray-700 mb-2">{{ section.name }}</h5>
+                <div class="space-y-1">
+                    {% for item in section.items %}
+                    <code class="block text-xs bg-gray-50 px-2 py-1 rounded text-gray-600">{{ item }}</code>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Available Tables -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Available Tables</h4>
+        </div>
+        <div class="p-4">
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {% for table in viz_data.available_tables %}
+                <div class="border rounded p-3">
+                    <div class="flex items-center justify-between mb-1">
+                        <code class="font-bold text-indigo-600">{{ table.name }}</code>
+                        <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ table.rows }} rows</span>
+                    </div>
+                    <div class="text-xs text-gray-500">{{ table.columns }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Learning Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/sql-basics/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/sql-basics/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-emerald-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

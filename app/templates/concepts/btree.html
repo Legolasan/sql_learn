@@ -1,0 +1,216 @@
+{% if viz_data.error %}
+<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+    <p class="text-red-700">{{ viz_data.error }}</p>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Stats bar -->
+    <div class="flex items-center justify-between bg-gray-50 rounded-lg p-4">
+        <div>
+            <span class="text-sm text-gray-500">Searching</span>
+            <span class="font-mono font-semibold">{{ viz_data.search_column }} {{ viz_data.search_op }} {{ viz_data.search_value }}</span>
+            <span class="text-sm text-gray-500">in {{ viz_data.table_name }}</span>
+        </div>
+        <div class="flex items-center space-x-6 text-sm">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-red-500">{{ viz_data.stats.full_scan_comparisons }}</div>
+                <div class="text-gray-500">Full Scan</div>
+            </div>
+            <div class="text-gray-300">vs</div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-500">{{ viz_data.stats.btree_comparisons }}</div>
+                <div class="text-gray-500">B-Tree</div>
+            </div>
+            <div class="bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium">
+                {{ viz_data.stats.efficiency }}
+            </div>
+        </div>
+    </div>
+
+    <!-- B-Tree visualization -->
+    <div class="bg-white border rounded-lg p-6 overflow-x-auto">
+        <h3 class="text-lg font-semibold mb-4">B-Tree Index on '{{ viz_data.search_column }}'</h3>
+
+        <svg id="btree-svg" class="w-full" viewBox="0 0 800 400" style="min-height: 350px;">
+            <!-- Tree will be rendered here -->
+            <g id="btree-nodes"></g>
+            <g id="btree-edges"></g>
+        </svg>
+    </div>
+
+    <!-- Step-by-step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Traversal Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button id="prev-step" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/btree/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>
+                    ◀ Prev
+                </button>
+                <span class="px-3 py-1 bg-white rounded border">
+                    Step {{ current_step + 1 }} / {{ steps | length }}
+                </span>
+                <button id="next-step" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/btree/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>
+                    Next ▶
+                </button>
+            </div>
+        </div>
+
+        <!-- Current step info -->
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-indigo-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Traversal path -->
+    <div class="bg-white border rounded-lg p-4">
+        <h4 class="font-semibold mb-3">Traversal Path</h4>
+        <div class="flex items-center space-x-2 flex-wrap">
+            {% for t in viz_data.traversal %}
+            <div class="flex items-center">
+                <div class="px-3 py-1 rounded-full text-sm
+                    {% if t.action == 'found' %}bg-green-100 text-green-700
+                    {% elif t.action == 'not_found' %}bg-red-100 text-red-700
+                    {% elif loop.index0 == current_step %}bg-yellow-200 text-yellow-800 ring-2 ring-yellow-400
+                    {% elif loop.index0 < current_step %}bg-green-50 text-green-600
+                    {% else %}bg-gray-100 text-gray-500{% endif %}">
+                    Node {{ t.node_id }}
+                </div>
+                {% if not loop.last %}
+                <span class="mx-2 text-gray-400">→</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Render B-tree
+(function() {
+    const treeData = {{ viz_data.tree_structure | tojson }};
+    const traversal = {{ viz_data.traversal | tojson }};
+    const currentStep = {{ current_step }};
+
+    const svg = document.getElementById('btree-svg');
+    const nodesGroup = document.getElementById('btree-nodes');
+    const edgesGroup = document.getElementById('btree-edges');
+
+    // Clear previous
+    nodesGroup.innerHTML = '';
+    edgesGroup.innerHTML = '';
+
+    // Calculate positions
+    const nodeWidth = 80;
+    const nodeHeight = 40;
+    const levelHeight = 80;
+    const svgWidth = 800;
+
+    function getNodePositions(node, level = 0, leftBound = 0, rightBound = svgWidth) {
+        const positions = [];
+        const x = (leftBound + rightBound) / 2;
+        const y = 50 + level * levelHeight;
+
+        positions.push({ ...node, x, y });
+
+        if (node.children && node.children.length > 0) {
+            const childWidth = (rightBound - leftBound) / node.children.length;
+            node.children.forEach((child, i) => {
+                const childLeft = leftBound + i * childWidth;
+                const childRight = childLeft + childWidth;
+                positions.push(...getNodePositions(child, level + 1, childLeft, childRight));
+            });
+        }
+
+        return positions;
+    }
+
+    const positions = getNodePositions(treeData);
+    const positionMap = {};
+    positions.forEach(p => positionMap[p.id] = p);
+
+    // Determine which nodes are highlighted
+    const visitedNodes = new Set();
+    let currentNode = null;
+    for (let i = 0; i <= currentStep && i < traversal.length; i++) {
+        visitedNodes.add(traversal[i].node_id);
+        if (i === currentStep) {
+            currentNode = traversal[i].node_id;
+        }
+    }
+
+    // Draw edges first
+    positions.forEach(node => {
+        if (node.children) {
+            node.children.forEach(child => {
+                const childPos = positionMap[child.id];
+                if (childPos) {
+                    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', node.x);
+                    line.setAttribute('y1', node.y + nodeHeight/2);
+                    line.setAttribute('x2', childPos.x);
+                    line.setAttribute('y2', childPos.y - nodeHeight/2);
+                    line.setAttribute('stroke', '#cbd5e1');
+                    line.setAttribute('stroke-width', '2');
+                    edgesGroup.appendChild(line);
+                }
+            });
+        }
+    });
+
+    // Draw nodes
+    positions.forEach(node => {
+        const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        g.setAttribute('transform', `translate(${node.x - nodeWidth/2}, ${node.y - nodeHeight/2})`);
+
+        // Node rectangle
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('width', nodeWidth);
+        rect.setAttribute('height', nodeHeight);
+        rect.setAttribute('rx', '6');
+        rect.setAttribute('class', 'btree-node');
+
+        if (node.id === currentNode) {
+            rect.setAttribute('fill', '#fde047');
+            rect.setAttribute('stroke', '#eab308');
+            rect.setAttribute('stroke-width', '3');
+        } else if (visitedNodes.has(node.id)) {
+            rect.setAttribute('fill', '#86efac');
+            rect.setAttribute('stroke', '#22c55e');
+            rect.setAttribute('stroke-width', '2');
+        } else {
+            rect.setAttribute('fill', '#f1f5f9');
+            rect.setAttribute('stroke', '#cbd5e1');
+            rect.setAttribute('stroke-width', '1');
+        }
+
+        g.appendChild(rect);
+
+        // Node keys text
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', nodeWidth / 2);
+        text.setAttribute('y', nodeHeight / 2 + 4);
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('font-size', '11');
+        text.setAttribute('font-family', 'monospace');
+        text.textContent = node.keys.slice(0, 3).join(', ');
+        g.appendChild(text);
+
+        nodesGroup.appendChild(g);
+    });
+})();
+</script>
+{% endif %}
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

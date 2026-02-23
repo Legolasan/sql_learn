@@ -1,0 +1,490 @@
+<div class="space-y-6">
+    <!-- What is a CTE - Hero banner -->
+    <div class="bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-2">{{ viz_data.what_is_cte.definition }}</h3>
+        <p class="text-violet-200 mb-4">{{ viz_data.what_is_cte.analogy }}</p>
+        <div class="grid md:grid-cols-4 gap-3 mt-4">
+            {% for benefit in viz_data.what_is_cte.key_benefits %}
+            <div class="bg-white/20 rounded-lg p-3">
+                <div class="font-bold">{{ benefit.benefit }}</div>
+                <div class="text-sm opacity-90">{{ benefit.description }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="mt-4 text-sm opacity-75">{{ viz_data.what_is_cte.mysql_version }}</div>
+    </div>
+
+    <!-- Detected CTE info -->
+    {% if viz_data.has_cte %}
+    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <span class="text-sm text-indigo-600">CTEs Found in Your Query:</span>
+                <span class="ml-2 text-xl font-bold text-indigo-700">
+                    {{ viz_data.cte_names | join(', ') }}
+                </span>
+            </div>
+            {% if viz_data.is_recursive %}
+            <span class="px-3 py-1 bg-orange-100 text-orange-700 text-sm font-medium rounded-full">
+                🔄 Recursive CTE
+            </span>
+            {% else %}
+            <span class="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                📝 Non-Recursive
+            </span>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Syntax Breakdown -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">CTE Syntax Reference</h4>
+        </div>
+        <div class="p-4">
+            <!-- Tabs for different syntax types -->
+            <div class="flex space-x-2 mb-4" x-data="{ tab: '{{ 'recursive' if viz_data.is_recursive else 'basic' }}' }">
+                <button @click="tab = 'basic'"
+                        :class="tab === 'basic' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100'"
+                        class="px-4 py-2 rounded-lg font-medium text-sm">Basic</button>
+                <button @click="tab = 'multiple'"
+                        :class="tab === 'multiple' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100'"
+                        class="px-4 py-2 rounded-lg font-medium text-sm">Multiple CTEs</button>
+                <button @click="tab = 'recursive'"
+                        :class="tab === 'recursive' ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100'"
+                        class="px-4 py-2 rounded-lg font-medium text-sm">Recursive</button>
+
+                <!-- Content panels -->
+                <div class="flex-1 ml-4">
+                    <!-- Basic syntax -->
+                    <div x-show="tab === 'basic'">
+                        <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">{{ viz_data.syntax_breakdown.basic.template }}</pre>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            {% for part in viz_data.syntax_breakdown.basic.parts %}
+                            <div class="text-sm">
+                                <code class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded">{{ part.part }}</code>
+                                <span class="text-gray-600 ml-2">{{ part.description }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Multiple CTEs -->
+                    <div x-show="tab === 'multiple'" style="display: none;">
+                        <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">{{ viz_data.syntax_breakdown.multiple.template }}</pre>
+                        <p class="mt-3 text-sm text-gray-600">{{ viz_data.syntax_breakdown.multiple.note }}</p>
+                    </div>
+
+                    <!-- Recursive -->
+                    <div x-show="tab === 'recursive'" style="display: none;">
+                        <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-x-auto">{{ viz_data.syntax_breakdown.recursive.template }}</pre>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            {% for part in viz_data.syntax_breakdown.recursive.parts %}
+                            <div class="text-sm">
+                                <code class="bg-orange-100 text-orange-700 px-2 py-1 rounded">{{ part.part }}</code>
+                                <span class="text-gray-600 ml-2">{{ part.description }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTE Types Grid -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Types of CTEs</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            {% for cte_type in viz_data.cte_types %}
+            <div class="border rounded-lg p-4 {% if viz_data.is_recursive and 'Recursive' in cte_type.type %}ring-2 ring-orange-400 bg-orange-50{% endif %}">
+                <div class="flex items-center mb-2">
+                    <span class="text-2xl mr-2">{{ cte_type.icon }}</span>
+                    <h5 class="font-semibold">{{ cte_type.type }}</h5>
+                </div>
+                <p class="text-sm text-gray-600 mb-3">{{ cte_type.description }}</p>
+                <pre class="bg-gray-900 text-green-400 p-3 rounded text-xs overflow-x-auto mb-2">{{ cte_type.example }}</pre>
+                <p class="text-xs text-indigo-600">💡 {{ cte_type.use_when }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recursive CTE Deep Dive -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-orange-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-orange-800">🔄 Recursive CTE Deep Dive</h4>
+        </div>
+        <div class="p-4">
+            <!-- Anatomy diagram -->
+            <div class="mb-6">
+                <h5 class="font-medium mb-2">{{ viz_data.recursive_anatomy.title }}</h5>
+                <pre class="bg-gray-100 p-4 rounded-lg text-xs font-mono overflow-x-auto">{{ viz_data.recursive_anatomy.diagram }}</pre>
+            </div>
+
+            <!-- Execution steps -->
+            <div class="mb-6">
+                <h5 class="font-medium mb-3">How Recursion Executes</h5>
+                <div class="flex flex-wrap items-center gap-2">
+                    {% for step in viz_data.recursive_anatomy.execution_steps %}
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-700 font-bold text-sm">{{ step.step }}</div>
+                        <div class="ml-2 mr-4">
+                            <div class="text-sm font-medium">{{ step.title }}</div>
+                            <div class="text-xs text-gray-500">{{ step.description }}</div>
+                        </div>
+                        {% if not loop.last %}<span class="text-orange-400">→</span>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Org hierarchy visualization -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h5 class="font-medium mb-3">{{ viz_data.org_hierarchy.title }}</h5>
+                <p class="text-sm text-gray-600 mb-4">{{ viz_data.org_hierarchy.description }}</p>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <!-- Tree visualization -->
+                    <div class="bg-white rounded-lg p-4 border">
+                        <h6 class="text-sm font-medium mb-3">Organization Tree</h6>
+                        <div class="space-y-1 text-sm font-mono">
+                            {% for emp in viz_data.org_hierarchy.data %}
+                            <div style="padding-left: {{ emp.level * 20 }}px" class="{% if emp.level == 0 %}font-bold text-indigo-700{% elif emp.level == 1 %}text-blue-600{% elif emp.level == 2 %}text-green-600{% else %}text-gray-600{% endif %}">
+                                {% if emp.level > 0 %}└─{% endif %}{{ emp.name }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Iteration breakdown -->
+                    <div class="bg-white rounded-lg p-4 border">
+                        <h6 class="text-sm font-medium mb-3">Recursion Iterations</h6>
+                        <div class="space-y-2">
+                            {% for iter in viz_data.org_hierarchy.iterations %}
+                            <div class="flex items-center text-sm {% if iter.rows | length == 0 %}text-gray-400{% endif %}">
+                                <span class="w-20 font-medium {% if 'Anchor' in iter.label %}text-indigo-600{% elif 'Termination' in iter.label %}text-red-600{% else %}text-orange-600{% endif %}">{{ iter.label }}</span>
+                                <span class="flex-1">{{ iter.description }}</span>
+                                {% if iter.rows %}
+                                <span class="bg-gray-100 px-2 py-1 rounded text-xs">{{ iter.rows | length }} row(s)</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recursive Examples -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Real-World Recursive CTE Examples</h4>
+        </div>
+        <div class="divide-y">
+            {% for example in viz_data.recursive_examples %}
+            <details class="group">
+                <summary class="px-4 py-3 cursor-pointer hover:bg-gray-50 flex items-center justify-between">
+                    <div class="flex items-center">
+                        <span class="text-2xl mr-3">{{ example.icon }}</span>
+                        <div>
+                            <h5 class="font-medium">{{ example.name }}</h5>
+                            <p class="text-sm text-gray-500">{{ example.description }}</p>
+                        </div>
+                    </div>
+                    <span class="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div class="px-4 pb-4">
+                    <pre class="bg-gray-900 text-green-400 p-4 rounded-lg text-xs overflow-x-auto">{{ example.sql }}</pre>
+                    {% if example.output_preview %}
+                    <div class="mt-3">
+                        <span class="text-xs text-gray-500">Output Preview:</span>
+                        <div class="bg-gray-50 rounded p-2 mt-1 overflow-x-auto">
+                            <table class="text-xs">
+                                <tbody>
+                                    {% for row in example.output_preview %}
+                                    <tr class="border-b">
+                                        {% for key, val in row.items() %}
+                                        <td class="px-2 py-1 font-mono">{{ val }}</td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </details>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Termination Rules -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-red-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-red-800">⚠️ {{ viz_data.termination_rules.title }}</h4>
+            <p class="text-sm text-red-600">{{ viz_data.termination_rules.warning }}</p>
+        </div>
+        <div class="p-4">
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                {% for strategy in viz_data.termination_rules.strategies %}
+                <div class="border rounded-lg p-3">
+                    <div class="flex items-center mb-2">
+                        <span class="text-xl mr-2">{{ strategy.icon }}</span>
+                        <h5 class="font-medium">{{ strategy.name }}</h5>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-2">{{ strategy.description }}</p>
+                    <code class="text-xs bg-gray-100 px-2 py-1 rounded block">{{ strategy.example }}</code>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="bg-yellow-50 rounded-lg p-3">
+                <div class="flex items-center">
+                    <span class="text-yellow-600 font-mono text-sm mr-2">@@{{ viz_data.termination_rules.mysql_setting.variable }}</span>
+                    <span class="text-sm text-gray-600">Default: {{ viz_data.termination_rules.mysql_setting.default }}</span>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">{{ viz_data.termination_rules.mysql_setting.note }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTE vs Alternatives -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">CTE vs Alternatives</h4>
+        </div>
+        <div class="divide-y">
+            {% for comp in viz_data.comparisons %}
+            <details class="group">
+                <summary class="px-4 py-3 cursor-pointer hover:bg-gray-50 flex items-center justify-between">
+                    <h5 class="font-medium">{{ comp.title }}</h5>
+                    <span class="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+                </summary>
+                <div class="px-4 pb-4">
+                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <h6 class="text-sm font-medium text-green-700 mb-2">CTE Pros ✓</h6>
+                            <ul class="text-sm space-y-1">
+                                {% for pro in comp.cte_pros %}
+                                <li class="flex items-start"><span class="text-green-500 mr-2">+</span>{{ pro }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% if comp.cte_cons %}
+                            <h6 class="text-sm font-medium text-red-700 mt-3 mb-2">CTE Cons ✗</h6>
+                            <ul class="text-sm space-y-1">
+                                {% for con in comp.cte_cons %}
+                                <li class="flex items-start"><span class="text-red-500 mr-2">-</span>{{ con }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if comp.subquery_pros %}
+                            <h6 class="text-sm font-medium text-blue-700 mb-2">Subquery Pros ✓</h6>
+                            <ul class="text-sm space-y-1">
+                                {% for pro in comp.subquery_pros %}
+                                <li class="flex items-start"><span class="text-blue-500 mr-2">+</span>{{ pro }}</li>
+                                {% endfor %}
+                            </ul>
+                            <h6 class="text-sm font-medium text-red-700 mt-3 mb-2">Subquery Cons ✗</h6>
+                            <ul class="text-sm space-y-1">
+                                {% for con in comp.subquery_cons %}
+                                <li class="flex items-start"><span class="text-red-500 mr-2">-</span>{{ con }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            {% if comp.temp_table_pros %}
+                            <h6 class="text-sm font-medium text-blue-700 mb-2">Temp Table Pros ✓</h6>
+                            <ul class="text-sm space-y-1">
+                                {% for pro in comp.temp_table_pros %}
+                                <li class="flex items-start"><span class="text-blue-500 mr-2">+</span>{{ pro }}</li>
+                                {% endfor %}
+                            </ul>
+                            <h6 class="text-sm font-medium text-red-700 mt-3 mb-2">Temp Table Cons ✗</h6>
+                            <ul class="text-sm space-y-1">
+                                {% for con in comp.temp_table_cons %}
+                                <li class="flex items-start"><span class="text-red-500 mr-2">-</span>{{ con }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            {% if comp.view_pros %}
+                            <h6 class="text-sm font-medium text-blue-700 mb-2">View Pros ✓</h6>
+                            <ul class="text-sm space-y-1">
+                                {% for pro in comp.view_pros %}
+                                <li class="flex items-start"><span class="text-blue-500 mr-2">+</span>{{ pro }}</li>
+                                {% endfor %}
+                            </ul>
+                            <h6 class="text-sm font-medium text-red-700 mt-3 mb-2">View Cons ✗</h6>
+                            <ul class="text-sm space-y-1">
+                                {% for con in comp.view_cons %}
+                                <li class="flex items-start"><span class="text-red-500 mr-2">-</span>{{ con }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="bg-indigo-50 rounded p-3 text-sm">
+                        <strong class="text-indigo-700">Verdict:</strong> {{ comp.verdict }}
+                    </div>
+                    {% if comp.example_before %}
+                    <div class="grid md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <span class="text-xs text-red-500 font-medium">Before (Nested Subquery):</span>
+                            <pre class="bg-gray-900 text-red-400 p-3 rounded text-xs mt-1 overflow-x-auto">{{ comp.example_before }}</pre>
+                        </div>
+                        <div>
+                            <span class="text-xs text-green-500 font-medium">After (With CTE):</span>
+                            <pre class="bg-gray-900 text-green-400 p-3 rounded text-xs mt-1 overflow-x-auto">{{ comp.example_after }}</pre>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </details>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Use Cases -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">When to Use CTEs</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {% for usecase in viz_data.use_cases %}
+            <div class="border rounded-lg p-4">
+                <div class="text-3xl mb-2">{{ usecase.icon }}</div>
+                <h5 class="font-medium mb-2">{{ usecase.category }}</h5>
+                <ul class="text-xs text-gray-600 space-y-1">
+                    {% for ex in usecase.examples %}
+                    <li>• {{ ex }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Performance -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-blue-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-blue-800">{{ viz_data.performance.title }}</h4>
+        </div>
+        <div class="p-4">
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                {% for point in viz_data.performance.key_points %}
+                <div class="border rounded-lg p-3">
+                    <h5 class="font-medium mb-1">{{ point.point }}</h5>
+                    <p class="text-sm text-gray-600 mb-2">{{ point.description }}</p>
+                    <div class="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">💡 {{ point.tip }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-gray-50 rounded p-3">
+                    <h5 class="font-medium text-sm mb-2">Optimizer Hints</h5>
+                    {% for hint in viz_data.performance.optimizer_hints %}
+                    <div class="text-sm mb-1">
+                        <code class="bg-gray-200 px-1 rounded">{{ hint.hint }}</code>
+                        <span class="text-gray-600 ml-2">{{ hint.description }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                    <h5 class="font-medium text-sm mb-2">EXPLAIN Indicators</h5>
+                    {% for ind in viz_data.performance.explain_indicators %}
+                    <div class="text-sm mb-1">
+                        <code class="bg-purple-100 text-purple-700 px-1 rounded">{{ ind.indicator }}</code>
+                        <span class="text-gray-600 ml-2">{{ ind.meaning }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Common Mistakes -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-amber-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-amber-800">⚠️ Common Mistakes</h4>
+        </div>
+        <div class="divide-y">
+            {% for mistake in viz_data.common_mistakes %}
+            <div class="p-4">
+                <h5 class="font-medium text-amber-800 mb-3">{{ mistake.mistake }}</h5>
+                <div class="grid md:grid-cols-2 gap-4 mb-2">
+                    <div>
+                        <span class="text-xs text-red-500 font-medium">❌ Wrong:</span>
+                        <pre class="bg-red-50 text-red-700 p-2 rounded text-xs mt-1 overflow-x-auto">{{ mistake.wrong }}</pre>
+                    </div>
+                    <div>
+                        <span class="text-xs text-green-500 font-medium">✓ Right:</span>
+                        <pre class="bg-green-50 text-green-700 p-2 rounded text-xs mt-1 overflow-x-auto">{{ mistake.right }}</pre>
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600">{{ mistake.explanation }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Execution Flow Visualization -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-purple-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-purple-800">Execution Flow</h4>
+        </div>
+        <div class="p-4">
+            <div class="flex flex-wrap items-center justify-center gap-2">
+                {% for step in viz_data.execution_flow %}
+                <div class="flex items-center">
+                    <div class="bg-purple-100 rounded-lg p-3 text-center min-w-[100px]">
+                        <div class="text-2xl">{{ step.icon }}</div>
+                        <div class="text-sm font-medium text-purple-700">{{ step.phase }}</div>
+                        <div class="text-xs text-purple-600">{{ step.description[:30] }}{% if step.description|length > 30 %}...{% endif %}</div>
+                    </div>
+                    {% if not loop.last %}
+                    <span class="mx-2 text-purple-400 text-xl">→</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/cte/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>◀ Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/cte/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next ▶</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-indigo-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Alpine.js for tabs (if not already included) -->
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

@@ -1,0 +1,182 @@
+{% if viz_data.error %}
+<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+    <p class="text-red-700">{{ viz_data.error }}</p>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Join type indicator -->
+    <div class="bg-indigo-50 rounded-lg p-4 flex items-center justify-between">
+        <div>
+            <span class="text-sm text-indigo-600">Join Type:</span>
+            <span class="ml-2 text-xl font-bold text-indigo-700">{{ viz_data.join_type }} JOIN</span>
+        </div>
+        <div class="text-sm text-gray-600">
+            {{ viz_data.join_condition.left_col }} = {{ viz_data.join_condition.right_col }}
+        </div>
+    </div>
+
+    <!-- Venn diagram visualization -->
+    <div class="bg-white border rounded-lg p-6">
+        <h3 class="font-semibold mb-4">Visual Representation</h3>
+        <svg viewBox="0 0 400 200" class="w-full max-w-md mx-auto">
+            <!-- Left circle -->
+            <circle cx="140" cy="100" r="70" fill="{{ 'rgba(99, 102, 241, 0.3)' if viz_data.join_type in ['LEFT', 'INNER', 'CROSS'] else 'rgba(200, 200, 200, 0.2)' }}"
+                    stroke="#6366f1" stroke-width="2"/>
+            <text x="100" y="100" font-size="14" fill="#4338ca">{{ viz_data.left_table.name }}</text>
+            <text x="100" y="120" font-size="10" fill="#6366f1">{{ viz_data.left_table.total }} rows</text>
+
+            <!-- Right circle -->
+            <circle cx="260" cy="100" r="70" fill="{{ 'rgba(16, 185, 129, 0.3)' if viz_data.join_type in ['RIGHT', 'INNER', 'CROSS'] else 'rgba(200, 200, 200, 0.2)' }}"
+                    stroke="#10b981" stroke-width="2"/>
+            <text x="260" y="100" font-size="14" fill="#047857">{{ viz_data.right_table.name }}</text>
+            <text x="260" y="120" font-size="10" fill="#10b981">{{ viz_data.right_table.total }} rows</text>
+
+            <!-- Intersection highlight -->
+            {% if viz_data.join_type == 'INNER' %}
+            <clipPath id="leftClip"><circle cx="140" cy="100" r="70"/></clipPath>
+            <circle cx="260" cy="100" r="70" fill="rgba(251, 191, 36, 0.5)" clip-path="url(#leftClip)"/>
+            {% endif %}
+
+            <!-- Result count -->
+            <text x="200" y="180" font-size="12" fill="#374151" text-anchor="middle">
+                Result: {{ viz_data.result_total }} rows
+            </text>
+        </svg>
+    </div>
+
+    <!-- Tables side by side -->
+    <div class="grid md:grid-cols-2 gap-4">
+        <!-- Left table -->
+        <div class="bg-white border rounded-lg overflow-hidden">
+            <div class="bg-indigo-50 px-4 py-2 border-b">
+                <h4 class="font-semibold text-indigo-700">{{ viz_data.left_table.name }}</h4>
+                <span class="text-xs text-indigo-500">{{ viz_data.match_info.left_matched }} matched, {{ viz_data.match_info.left_unmatched }} unmatched</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            {% for col in viz_data.left_table.columns[:4] %}
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">{{ col }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in viz_data.left_table.data[:5] %}
+                        <tr class="border-b hover:bg-gray-50">
+                            {% for col in viz_data.left_table.columns[:4] %}
+                            <td class="px-3 py-2 font-mono text-xs">{{ row[col] }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right table -->
+        <div class="bg-white border rounded-lg overflow-hidden">
+            <div class="bg-green-50 px-4 py-2 border-b">
+                <h4 class="font-semibold text-green-700">{{ viz_data.right_table.name }}</h4>
+                <span class="text-xs text-green-500">{{ viz_data.match_info.right_matched }} matched, {{ viz_data.match_info.right_unmatched }} unmatched</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            {% for col in viz_data.right_table.columns[:4] %}
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">{{ col }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in viz_data.right_table.data[:5] %}
+                        <tr class="border-b hover:bg-gray-50">
+                            {% for col in viz_data.right_table.columns[:4] %}
+                            <td class="px-3 py-2 font-mono text-xs">{{ row[col] }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Result table -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-yellow-50 px-4 py-2 border-b flex justify-between items-center">
+            <h4 class="font-semibold text-yellow-700">Result ({{ viz_data.result_total }} rows)</h4>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        {% if viz_data.result %}
+                        {% for col in viz_data.result[0].keys() | list %}
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 whitespace-nowrap">{{ col }}</th>
+                        {% endfor %}
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in viz_data.result[:8] %}
+                    <tr class="border-b hover:bg-gray-50">
+                        {% for val in row.values() %}
+                        <td class="px-3 py-2 font-mono text-xs {% if val is none %}text-gray-300 italic{% endif %}">
+                            {{ val if val is not none else 'NULL' }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Join type explanations -->
+    <div class="bg-white border rounded-lg p-4">
+        <h4 class="font-semibold mb-3">Join Types Reference</h4>
+        <div class="grid md:grid-cols-2 gap-4">
+            {% for name, info in viz_data.join_explanations.items() %}
+            <div class="p-3 rounded-lg border {% if name == viz_data.join_type %}bg-indigo-50 border-indigo-200{% else %}bg-gray-50{% endif %}">
+                <h5 class="font-medium {% if name == viz_data.join_type %}text-indigo-700{% else %}text-gray-700{% endif %}">
+                    {{ info.title }}
+                </h5>
+                <p class="text-sm text-gray-600 mt-1">{{ info.description }}</p>
+                <p class="text-xs text-gray-500 mt-2">Use when: {{ info.use_when }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/joins/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>◀ Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/joins/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next ▶</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-indigo-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

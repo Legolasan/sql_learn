@@ -1,0 +1,666 @@
+<div class="space-y-6" x-data="joinAnimator()">
+    <!-- Hero: Join Overview -->
+    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-2">{{ viz_data.join_overview.title }}</h3>
+        <p class="text-indigo-100 mb-4">JOINs combine rows from multiple tables based on related columns</p>
+
+        <!-- Detected Join Type -->
+        {% if viz_data.detected_join.type != 'none' %}
+        <div class="bg-white/20 rounded-lg p-4 mt-4">
+            <div class="flex items-center">
+                <span class="text-3xl mr-3">
+                    {% if viz_data.detected_join.type == 'inner' %}&#8745;
+                    {% elif viz_data.detected_join.type == 'left' %}&#10197;
+                    {% elif viz_data.detected_join.type == 'right' %}&#10198;
+                    {% elif viz_data.detected_join.type == 'cross' %}&times;
+                    {% else %}&#128279;{% endif %}
+                </span>
+                <div>
+                    <div class="font-bold">{{ viz_data.detected_join.type | upper }} JOIN Detected</div>
+                    <div class="text-sm text-indigo-100">{{ viz_data.detected_join.description }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- JOIN Type Cards -->
+    <div class="grid md:grid-cols-5 gap-3">
+        {% for jtype in viz_data.join_overview.types %}
+        <div class="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer
+            {% if viz_data.detected_join.type == jtype.name.split(' ')[0] | lower %}ring-2 ring-indigo-500{% endif %}"
+            @click="selectedJoin = '{{ jtype.name.split(' ')[0] | lower }}'">
+            <div class="text-center">
+                <div class="text-3xl font-bold text-indigo-600 mb-1">{{ jtype.symbol }}</div>
+                <div class="font-semibold text-sm">{{ jtype.name }}</div>
+                <div class="text-xs text-gray-500 mt-1">{{ jtype.description }}</div>
+                {% if jtype.warning %}
+                <div class="text-xs text-red-500 mt-1">{{ jtype.warning }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Animated Join Visualizer -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-indigo-50 px-4 py-3 border-b flex items-center justify-between">
+            <h4 class="font-semibold text-indigo-800">Interactive JOIN Visualizer</h4>
+            <div class="flex items-center space-x-2">
+                <button @click="resetAnimation()" class="px-3 py-1 bg-gray-200 rounded text-sm hover:bg-gray-300">
+                    Reset
+                </button>
+                <button @click="toggleAnimation()"
+                    class="px-3 py-1 rounded text-sm"
+                    :class="isPlaying ? 'bg-red-500 text-white' : 'bg-indigo-500 text-white'">
+                    <span x-text="isPlaying ? 'Pause' : 'Play'"></span>
+                </button>
+                <button @click="stepForward()" class="px-3 py-1 bg-indigo-100 rounded text-sm hover:bg-indigo-200">
+                    Step &rarr;
+                </button>
+            </div>
+        </div>
+
+        <div class="p-4">
+            <!-- Join Type Selector -->
+            <div class="flex justify-center space-x-2 mb-6">
+                <template x-for="jt in ['inner', 'left', 'right', 'cross']">
+                    <button @click="changeJoinType(jt)"
+                        class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        :class="joinType === jt ? 'bg-indigo-600 text-white' : 'bg-gray-100 hover:bg-gray-200'">
+                        <span x-text="jt.toUpperCase() + ' JOIN'"></span>
+                    </button>
+                </template>
+            </div>
+
+            <!-- Tables Animation Area -->
+            <div class="grid md:grid-cols-3 gap-4">
+                <!-- Left Table (Employees) -->
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-blue-100 px-3 py-2 font-semibold text-blue-800">
+                        employees (LEFT)
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="bg-blue-50">
+                            <tr>
+                                <th class="px-2 py-1 text-left">id</th>
+                                <th class="px-2 py-1 text-left">name</th>
+                                <th class="px-2 py-1 text-left">dept_id</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(row, idx) in leftRows" :key="idx">
+                                <tr :class="{
+                                    'bg-green-100': matchedLeft.includes(idx) && currentStep > 0,
+                                    'bg-yellow-100': highlightedLeft === idx,
+                                    'bg-red-100 line-through opacity-50': excludedLeft.includes(idx) && animationComplete
+                                }" class="transition-colors duration-300">
+                                    <td class="px-2 py-1 border-t" x-text="row.id"></td>
+                                    <td class="px-2 py-1 border-t" x-text="row.name"></td>
+                                    <td class="px-2 py-1 border-t">
+                                        <span :class="row.department_id === null ? 'text-gray-400 italic' : ''">
+                                            <span x-text="row.department_id ?? 'NULL'"></span>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Join Arrows / Animation -->
+                <div class="flex flex-col items-center justify-center space-y-2">
+                    <div class="text-4xl font-bold text-indigo-600" x-text="joinSymbol"></div>
+                    <div class="text-sm text-gray-600 text-center font-medium" x-text="joinType.toUpperCase() + ' JOIN'"></div>
+                    <div class="text-xs text-gray-500 text-center">ON dept_id = id</div>
+
+                    <!-- Current Step Display -->
+                    <div x-show="currentStep > 0" class="bg-indigo-100 rounded-lg p-3 text-center mt-4">
+                        <div class="text-sm font-medium text-indigo-800" x-text="stepMessage"></div>
+                    </div>
+
+                    <!-- Match Lines (SVG) -->
+                    <div class="relative w-full h-20 mt-4" x-show="matchLines.length > 0">
+                        <svg class="w-full h-full">
+                            <template x-for="(line, idx) in matchLines" :key="idx">
+                                <line :x1="20" :y1="10 + line.left * 15" :x2="80" :y2="10 + line.right * 15"
+                                    stroke="#6366f1" stroke-width="2" class="animate-pulse"></line>
+                            </template>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Right Table (Departments) -->
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-purple-100 px-3 py-2 font-semibold text-purple-800">
+                        departments (RIGHT)
+                    </div>
+                    <table class="w-full text-sm">
+                        <thead class="bg-purple-50">
+                            <tr>
+                                <th class="px-2 py-1 text-left">id</th>
+                                <th class="px-2 py-1 text-left">name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(row, idx) in rightRows" :key="idx">
+                                <tr :class="{
+                                    'bg-green-100': matchedRight.includes(idx) && currentStep > 0,
+                                    'bg-yellow-100': highlightedRight === idx,
+                                    'bg-red-100 line-through opacity-50': excludedRight.includes(idx) && animationComplete
+                                }" class="transition-colors duration-300">
+                                    <td class="px-2 py-1 border-t" x-text="row.id"></td>
+                                    <td class="px-2 py-1 border-t" x-text="row.name"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Result Table -->
+            <div class="mt-6 border rounded-lg overflow-hidden" x-show="resultRows.length > 0">
+                <div class="bg-green-100 px-3 py-2 font-semibold text-green-800 flex justify-between">
+                    <span>Result (<span x-text="resultRows.length"></span> rows)</span>
+                    <span class="text-sm font-normal" x-text="getRowCountExplanation()"></span>
+                </div>
+                <div class="max-h-48 overflow-y-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-green-50 sticky top-0">
+                            <tr>
+                                <th class="px-2 py-1 text-left">e.name</th>
+                                <th class="px-2 py-1 text-left">e.dept_id</th>
+                                <th class="px-2 py-1 text-left">d.id</th>
+                                <th class="px-2 py-1 text-left">d.name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(row, idx) in resultRows" :key="idx">
+                                <tr class="hover:bg-green-50 transition-colors"
+                                    :class="{ 'animate-fade-in': idx === resultRows.length - 1 }">
+                                    <td class="px-2 py-1 border-t" x-text="row.left?.name ?? 'NULL'"></td>
+                                    <td class="px-2 py-1 border-t" x-text="row.left?.department_id ?? 'NULL'"></td>
+                                    <td class="px-2 py-1 border-t" x-text="row.right?.id ?? 'NULL'"></td>
+                                    <td class="px-2 py-1 border-t">
+                                        <span :class="row.right === null ? 'text-gray-400 italic' : ''">
+                                            <span x-text="row.right?.name ?? 'NULL'"></span>
+                                        </span>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Venn Diagrams -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">JOIN Venn Diagrams</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-5 gap-4">
+            {% for venn in viz_data.venn_diagrams %}
+            <div class="text-center">
+                <div class="relative w-24 h-16 mx-auto mb-2">
+                    <!-- Left circle -->
+                    <div class="absolute left-0 top-0 w-12 h-12 rounded-full border-2 border-blue-500
+                        {% if venn.left_only or venn.intersection %}bg-blue-200{% else %}bg-white{% endif %}"
+                        style="opacity: 0.7;"></div>
+                    <!-- Right circle -->
+                    <div class="absolute right-0 top-0 w-12 h-12 rounded-full border-2 border-purple-500
+                        {% if venn.right_only or venn.intersection %}bg-purple-200{% else %}bg-white{% endif %}"
+                        style="opacity: 0.7;"></div>
+                    {% if venn.intersection %}
+                    <!-- Intersection highlight -->
+                    <div class="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-green-400"></div>
+                    {% endif %}
+                </div>
+                <div class="font-medium text-sm">{{ venn.name }}</div>
+                <div class="text-xs text-gray-500">{{ venn.description }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Row Multiplication Warning -->
+    <div class="bg-yellow-50 border border-yellow-300 rounded-lg overflow-hidden">
+        <div class="bg-yellow-100 px-4 py-3 border-b border-yellow-300">
+            <h4 class="font-semibold text-yellow-800">{{ viz_data.row_multiplication.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-yellow-800 mb-4">{{ viz_data.row_multiplication.explanation }}</p>
+
+            <!-- Demo -->
+            <div class="bg-white rounded-lg p-4 border border-yellow-200 mb-4">
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <div class="text-sm text-gray-600">{{ viz_data.row_multiplication.demo.left_table }}</div>
+                        <div class="text-sm text-gray-600">JOIN {{ viz_data.row_multiplication.demo.right_table }}</div>
+                        <code class="text-xs bg-gray-100 px-2 py-1 rounded block mt-2">{{ viz_data.row_multiplication.demo.join_condition }}</code>
+                    </div>
+                    <div>
+                        <div class="text-sm"><strong>Expected:</strong> {{ viz_data.row_multiplication.demo.expected }}</div>
+                        <div class="text-sm text-red-600"><strong>Actual:</strong> {{ viz_data.row_multiplication.demo.actual }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scenarios -->
+            <div class="grid md:grid-cols-3 gap-3">
+                {% for scenario in viz_data.row_multiplication.scenarios %}
+                <div class="bg-white rounded-lg p-3 border">
+                    <div class="font-medium text-sm mb-1">{{ scenario.name }}</div>
+                    <code class="text-xs bg-gray-100 px-1 rounded">{{ scenario.example }}</code>
+                    <div class="text-xs text-gray-600 mt-2">{{ scenario.what_happens }}</div>
+                    <div class="text-xs text-yellow-700 mt-1 font-medium">{{ scenario.result }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Prevention -->
+            <div class="mt-4 bg-green-50 rounded-lg p-3">
+                <div class="font-medium text-green-800 text-sm mb-2">Prevention Tips:</div>
+                <ul class="text-sm text-green-700 space-y-1">
+                    {% for tip in viz_data.row_multiplication.prevention %}
+                    <li>- {{ tip }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semi-Join & Anti-Join Patterns -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-teal-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-teal-800">{{ viz_data.semi_anti_joins.title }}</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-6">
+            <!-- Semi-Join -->
+            <div>
+                <h5 class="font-medium text-teal-700 mb-2">{{ viz_data.semi_anti_joins.semi_join.name }}</h5>
+                <p class="text-sm text-gray-600 mb-2">{{ viz_data.semi_anti_joins.semi_join.purpose }}</p>
+                <div class="bg-green-50 border border-green-200 rounded p-2 text-xs text-green-700 mb-2">
+                    {{ viz_data.semi_anti_joins.semi_join.key_feature }}
+                </div>
+                <pre class="bg-gray-100 rounded p-3 text-xs overflow-x-auto">{{ viz_data.semi_anti_joins.semi_join.syntax }}</pre>
+
+                <div class="mt-3 space-y-2">
+                    {% for ex in viz_data.semi_anti_joins.semi_join.examples %}
+                    <div class="bg-gray-50 rounded p-2">
+                        <div class="text-xs text-gray-600 mb-1">{{ ex.description }}</div>
+                        <code class="text-xs">{{ ex.sql }}</code>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Anti-Join -->
+            <div>
+                <h5 class="font-medium text-red-700 mb-2">{{ viz_data.semi_anti_joins.anti_join.name }}</h5>
+                <p class="text-sm text-gray-600 mb-2">{{ viz_data.semi_anti_joins.anti_join.purpose }}</p>
+                <div class="bg-red-50 border border-red-200 rounded p-2 text-xs text-red-700 mb-2">
+                    {{ viz_data.semi_anti_joins.anti_join.key_feature }}
+                </div>
+                <pre class="bg-gray-100 rounded p-3 text-xs overflow-x-auto">{{ viz_data.semi_anti_joins.anti_join.syntax }}</pre>
+
+                <div class="mt-3 space-y-2">
+                    {% for ex in viz_data.semi_anti_joins.anti_join.examples %}
+                    <div class="bg-gray-50 rounded p-2">
+                        <div class="text-xs text-gray-600 mb-1">{{ ex.description }}</div>
+                        <code class="text-xs">{{ ex.sql }}</code>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- NULL Trap Warning -->
+        <div class="border-t bg-red-50 p-4">
+            <h5 class="font-medium text-red-800 mb-2">{{ viz_data.semi_anti_joins.why_exists_over_in.title }}</h5>
+            <ul class="text-sm text-red-700 space-y-1 mb-3">
+                {% for reason in viz_data.semi_anti_joins.why_exists_over_in.reasons %}
+                <li>- {{ reason }}</li>
+                {% endfor %}
+            </ul>
+            <div class="bg-white border border-red-300 rounded p-3">
+                <div class="text-sm"><strong>NULL Trap:</strong></div>
+                <code class="text-xs bg-red-100 px-2 py-1 rounded block mt-1">{{ viz_data.semi_anti_joins.why_exists_over_in.null_trap.query }}</code>
+                <div class="text-xs text-red-600 mt-2">{{ viz_data.semi_anti_joins.why_exists_over_in.null_trap.problem }}</div>
+                <div class="text-xs text-green-600 mt-1">Solution: {{ viz_data.semi_anti_joins.why_exists_over_in.null_trap.solution }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Self-Join Demo -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-orange-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-orange-800">{{ viz_data.self_join_demo.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.self_join_demo.why_needed }}</p>
+
+            <!-- Common Uses -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                {% for use in viz_data.self_join_demo.common_uses %}
+                <span class="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm">{{ use }}</span>
+                {% endfor %}
+            </div>
+
+            <!-- Syntax Example -->
+            <pre class="bg-gray-100 rounded-lg p-4 text-sm overflow-x-auto mb-4">{{ viz_data.self_join_demo.syntax_example }}</pre>
+
+            <!-- Key Points -->
+            <div class="bg-orange-50 rounded-lg p-3 mb-4">
+                <div class="font-medium text-orange-800 text-sm mb-2">Key Points:</div>
+                <ul class="text-sm text-orange-700 space-y-1">
+                    {% for point in viz_data.self_join_demo.key_points %}
+                    <li>- {{ point }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Sample Hierarchy -->
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-50 px-3 py-2 text-sm font-medium">Sample Output</div>
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Employee</th>
+                            <th class="px-3 py-2 text-left">Manager</th>
+                            <th class="px-3 py-2 text-left">Note</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in viz_data.self_join_demo.sample_data %}
+                        <tr class="border-t">
+                            <td class="px-3 py-2">{{ row.employee }}</td>
+                            <td class="px-3 py-2 {% if not row.manager %}text-gray-400 italic{% endif %}">
+                                {{ row.manager if row.manager else 'NULL' }}
+                            </td>
+                            <td class="px-3 py-2 text-gray-500 text-xs">{{ row.note }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Common Mistakes -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-red-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-red-800">Common JOIN Mistakes</h4>
+        </div>
+        <div class="divide-y">
+            {% for mistake in viz_data.common_mistakes %}
+            <div class="p-4">
+                <h5 class="font-medium text-red-700 mb-2">{{ mistake.mistake }}</h5>
+                <div class="grid md:grid-cols-2 gap-3 mb-2">
+                    <div class="bg-red-50 rounded p-2">
+                        <span class="text-xs text-red-500 font-medium">Wrong:</span>
+                        <pre class="text-xs text-red-700 mt-1 overflow-x-auto">{{ mistake.wrong }}</pre>
+                        <div class="text-xs text-red-600 mt-1">{{ mistake.result }}</div>
+                    </div>
+                    <div class="bg-green-50 rounded p-2">
+                        <span class="text-xs text-green-500 font-medium">Right:</span>
+                        <pre class="text-xs text-green-700 mt-1 overflow-x-auto">{{ mistake.right }}</pre>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Performance Tips -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-blue-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-blue-800">Performance Tips</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            {% for tip in viz_data.performance_tips %}
+            <div class="border rounded-lg p-3">
+                <div class="font-medium text-blue-700 mb-1">{{ tip.tip }}</div>
+                <div class="text-sm text-gray-600 mb-2">{{ tip.why }}</div>
+                {% if tip.example %}
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded block">{{ tip.example }}</code>
+                {% endif %}
+                {% if tip.when %}
+                <div class="text-xs text-gray-500 mt-1">When: {{ tip.when }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Learning Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/join-types/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/join-types/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-indigo-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Alpine.js Component -->
+<script>
+function joinAnimator() {
+    return {
+        joinType: '{{ viz_data.detected_join.type if viz_data.detected_join.type != "none" else "inner" }}',
+        isPlaying: false,
+        currentStep: 0,
+        maxSteps: 10,
+        animationInterval: null,
+
+        leftRows: [
+            { id: 1, name: 'Alice', department_id: 1 },
+            { id: 2, name: 'Bob', department_id: 1 },
+            { id: 3, name: 'Carol', department_id: 2 },
+            { id: 4, name: 'Dave', department_id: null }
+        ],
+        rightRows: [
+            { id: 1, name: 'Engineering' },
+            { id: 2, name: 'Sales' },
+            { id: 3, name: 'HR' }
+        ],
+
+        highlightedLeft: null,
+        highlightedRight: null,
+        matchedLeft: [],
+        matchedRight: [],
+        excludedLeft: [],
+        excludedRight: [],
+        resultRows: [],
+        matchLines: [],
+        stepMessage: '',
+        animationComplete: false,
+
+        get joinSymbol() {
+            const symbols = {
+                'inner': '\u2229',
+                'left': '\u27D5',
+                'right': '\u27D6',
+                'cross': '\u00D7'
+            };
+            return symbols[this.joinType] || '\u{1F517}';
+        },
+
+        init() {
+            // Start with first step visible
+        },
+
+        changeJoinType(type) {
+            this.joinType = type;
+            this.resetAnimation();
+        },
+
+        resetAnimation() {
+            this.isPlaying = false;
+            if (this.animationInterval) {
+                clearInterval(this.animationInterval);
+            }
+            this.currentStep = 0;
+            this.highlightedLeft = null;
+            this.highlightedRight = null;
+            this.matchedLeft = [];
+            this.matchedRight = [];
+            this.excludedLeft = [];
+            this.excludedRight = [];
+            this.resultRows = [];
+            this.matchLines = [];
+            this.stepMessage = '';
+            this.animationComplete = false;
+        },
+
+        toggleAnimation() {
+            if (this.isPlaying) {
+                this.isPlaying = false;
+                clearInterval(this.animationInterval);
+            } else {
+                this.isPlaying = true;
+                this.animationInterval = setInterval(() => {
+                    if (!this.stepForward()) {
+                        this.isPlaying = false;
+                        clearInterval(this.animationInterval);
+                    }
+                }, 1000);
+            }
+        },
+
+        stepForward() {
+            if (this.animationComplete) return false;
+
+            this.currentStep++;
+
+            if (this.joinType === 'inner') {
+                return this.animateInnerJoin();
+            } else if (this.joinType === 'left') {
+                return this.animateLeftJoin();
+            } else if (this.joinType === 'right') {
+                return this.animateRightJoin();
+            } else if (this.joinType === 'cross') {
+                return this.animateCrossJoin();
+            }
+            return false;
+        },
+
+        animateInnerJoin() {
+            const steps = [
+                () => { this.highlightedLeft = 0; this.stepMessage = 'Take Alice (dept_id=1)'; },
+                () => { this.stepMessage = 'Scan departments for id=1...'; this.highlightedRight = 0; },
+                () => { this.matchedLeft.push(0); this.matchedRight.push(0); this.matchLines.push({left: 0, right: 0}); this.resultRows.push({left: this.leftRows[0], right: this.rightRows[0]}); this.stepMessage = 'Match! Engineering'; this.highlightedLeft = null; },
+                () => { this.highlightedLeft = 1; this.stepMessage = 'Take Bob (dept_id=1)'; },
+                () => { this.matchedLeft.push(1); this.resultRows.push({left: this.leftRows[1], right: this.rightRows[0]}); this.stepMessage = 'Match! Engineering'; this.highlightedLeft = null; },
+                () => { this.highlightedLeft = 2; this.stepMessage = 'Take Carol (dept_id=2)'; this.highlightedRight = null; },
+                () => { this.highlightedRight = 1; this.matchedLeft.push(2); this.matchedRight.push(1); this.matchLines.push({left: 2, right: 1}); this.resultRows.push({left: this.leftRows[2], right: this.rightRows[1]}); this.stepMessage = 'Match! Sales'; },
+                () => { this.highlightedLeft = 3; this.highlightedRight = null; this.stepMessage = 'Take Dave (dept_id=NULL)'; },
+                () => { this.stepMessage = 'NULL never matches anything!'; },
+                () => { this.excludedLeft.push(3); this.excludedRight.push(2); this.stepMessage = 'Dave excluded. HR has no matches. Done!'; this.highlightedLeft = null; this.animationComplete = true; }
+            ];
+
+            if (this.currentStep <= steps.length) {
+                steps[this.currentStep - 1]();
+                return this.currentStep < steps.length;
+            }
+            return false;
+        },
+
+        animateLeftJoin() {
+            const steps = [
+                () => { this.highlightedLeft = 0; this.stepMessage = 'Take Alice (dept_id=1)'; },
+                () => { this.highlightedRight = 0; this.matchedLeft.push(0); this.matchedRight.push(0); this.resultRows.push({left: this.leftRows[0], right: this.rightRows[0]}); this.stepMessage = 'Match! Engineering'; },
+                () => { this.highlightedLeft = 1; this.highlightedRight = null; this.stepMessage = 'Take Bob (dept_id=1)'; },
+                () => { this.matchedLeft.push(1); this.resultRows.push({left: this.leftRows[1], right: this.rightRows[0]}); this.stepMessage = 'Match! Engineering'; },
+                () => { this.highlightedLeft = 2; this.stepMessage = 'Take Carol (dept_id=2)'; },
+                () => { this.highlightedRight = 1; this.matchedLeft.push(2); this.matchedRight.push(1); this.resultRows.push({left: this.leftRows[2], right: this.rightRows[1]}); this.stepMessage = 'Match! Sales'; },
+                () => { this.highlightedLeft = 3; this.highlightedRight = null; this.stepMessage = 'Take Dave (dept_id=NULL)'; },
+                () => { this.stepMessage = 'No match, but LEFT JOIN keeps Dave!'; },
+                () => { this.matchedLeft.push(3); this.resultRows.push({left: this.leftRows[3], right: null}); this.stepMessage = 'Dave included with NULL department'; this.highlightedLeft = null; this.animationComplete = true; }
+            ];
+
+            if (this.currentStep <= steps.length) {
+                steps[this.currentStep - 1]();
+                return this.currentStep < steps.length;
+            }
+            return false;
+        },
+
+        animateRightJoin() {
+            const steps = [
+                () => { this.highlightedRight = 0; this.stepMessage = 'Take Engineering (id=1)'; },
+                () => { this.highlightedLeft = 0; this.matchedLeft.push(0); this.matchedRight.push(0); this.resultRows.push({left: this.leftRows[0], right: this.rightRows[0]}); this.stepMessage = 'Match! Alice'; },
+                () => { this.highlightedLeft = 1; this.matchedLeft.push(1); this.resultRows.push({left: this.leftRows[1], right: this.rightRows[0]}); this.stepMessage = 'Match! Bob'; },
+                () => { this.highlightedRight = 1; this.highlightedLeft = null; this.stepMessage = 'Take Sales (id=2)'; },
+                () => { this.highlightedLeft = 2; this.matchedLeft.push(2); this.matchedRight.push(1); this.resultRows.push({left: this.leftRows[2], right: this.rightRows[1]}); this.stepMessage = 'Match! Carol'; },
+                () => { this.highlightedRight = 2; this.highlightedLeft = null; this.stepMessage = 'Take HR (id=3)'; },
+                () => { this.stepMessage = 'No employees in HR...'; },
+                () => { this.matchedRight.push(2); this.resultRows.push({left: null, right: this.rightRows[2]}); this.stepMessage = 'HR included with NULL employee!'; this.excludedLeft.push(3); this.highlightedRight = null; this.animationComplete = true; }
+            ];
+
+            if (this.currentStep <= steps.length) {
+                steps[this.currentStep - 1]();
+                return this.currentStep < steps.length;
+            }
+            return false;
+        },
+
+        animateCrossJoin() {
+            const steps = [
+                () => { this.highlightedLeft = 0; this.stepMessage = 'Take Alice'; },
+                () => { this.resultRows.push({left: this.leftRows[0], right: this.rightRows[0]}); this.resultRows.push({left: this.leftRows[0], right: this.rightRows[1]}); this.resultRows.push({left: this.leftRows[0], right: this.rightRows[2]}); this.matchedLeft.push(0); this.stepMessage = 'Combine with ALL departments (3 rows)'; },
+                () => { this.highlightedLeft = 1; this.stepMessage = 'Take Bob'; },
+                () => { this.resultRows.push({left: this.leftRows[1], right: this.rightRows[0]}); this.resultRows.push({left: this.leftRows[1], right: this.rightRows[1]}); this.resultRows.push({left: this.leftRows[1], right: this.rightRows[2]}); this.matchedLeft.push(1); this.stepMessage = 'Combine with ALL departments (3 more rows)'; },
+                () => { this.highlightedLeft = 2; this.stepMessage = 'Take Carol...'; },
+                () => { this.resultRows.push({left: this.leftRows[2], right: this.rightRows[0]}); this.resultRows.push({left: this.leftRows[2], right: this.rightRows[1]}); this.resultRows.push({left: this.leftRows[2], right: this.rightRows[2]}); this.matchedLeft.push(2); this.stepMessage = '3 more rows (9 total)'; },
+                () => { this.highlightedLeft = 3; this.stepMessage = 'Take Dave...'; },
+                () => { this.resultRows.push({left: this.leftRows[3], right: this.rightRows[0]}); this.resultRows.push({left: this.leftRows[3], right: this.rightRows[1]}); this.resultRows.push({left: this.leftRows[3], right: this.rightRows[2]}); this.matchedLeft.push(3); this.stepMessage = '4 employees x 3 departments = 12 rows!'; this.highlightedLeft = null; this.animationComplete = true; }
+            ];
+
+            if (this.currentStep <= steps.length) {
+                steps[this.currentStep - 1]();
+                return this.currentStep < steps.length;
+            }
+            return false;
+        },
+
+        getRowCountExplanation() {
+            if (this.joinType === 'inner') return 'Only matching rows';
+            if (this.joinType === 'left') return 'All left rows (with NULLs)';
+            if (this.joinType === 'right') return 'All right rows (with NULLs)';
+            if (this.joinType === 'cross') return '4 x 3 = 12 rows';
+            return '';
+        }
+    }
+}
+</script>
+
+<style>
+@keyframes fade-in {
+    from { opacity: 0; background-color: #d1fae5; }
+    to { opacity: 1; background-color: transparent; }
+}
+.animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+}
+</style>
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

@@ -1,0 +1,63 @@
+{# Query results table component #}
+{% if query_result %}
+<div class="bg-white border rounded-lg overflow-hidden mt-6">
+    <div class="bg-green-50 px-4 py-3 border-b flex items-center justify-between">
+        <div>
+            <h4 class="font-semibold text-green-800">Query Results</h4>
+            <span class="text-sm text-green-600">
+                {{ query_result.row_count }} row{% if query_result.row_count != 1 %}s{% endif %} returned
+                in {{ query_result.execution_time_ms }}ms
+            </span>
+        </div>
+        <button onclick="this.closest('.bg-white').querySelector('table').classList.toggle('hidden')"
+                class="text-sm text-green-600 hover:text-green-800">
+            Toggle ▼
+        </button>
+    </div>
+
+    {% if query_result.rows %}
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 border-b">#</th>
+                    {% for col in query_result.columns %}
+                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 border-b">{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in query_result.rows[:50] %}
+                <tr class="border-b hover:bg-gray-50 {% if loop.index is odd %}bg-white{% else %}bg-gray-50/50{% endif %}">
+                    <td class="px-3 py-2 text-gray-400 text-xs">{{ loop.index }}</td>
+                    {% for col in query_result.columns %}
+                    <td class="px-3 py-2 font-mono text-xs
+                        {% if row[col] is none %}text-gray-300 italic{% endif %}">
+                        {% if row[col] is none %}
+                            NULL
+                        {% elif row[col] is number %}
+                            {{ row[col] }}
+                        {% else %}
+                            {{ row[col] }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if query_result.row_count > 50 %}
+    <div class="px-4 py-2 bg-gray-50 text-sm text-gray-500 border-t">
+        Showing 50 of {{ query_result.row_count }} rows
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="p-4 text-gray-500 text-center">
+        <p>Query returned no results</p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}

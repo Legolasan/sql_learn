@@ -1,0 +1,144 @@
+<div class="space-y-6">
+    <!-- ACID overview -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-4">ACID Properties</h3>
+        <div class="grid md:grid-cols-4 gap-4">
+            {% for prop in viz_data.acid %}
+            <div class="bg-white/20 rounded-lg p-4">
+                <div class="text-3xl font-bold mb-1">{{ prop.letter }}</div>
+                <div class="font-semibold">{{ prop.name }}</div>
+                <div class="text-sm opacity-90 mt-2">{{ prop.description }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Isolation levels -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Isolation Levels</h4>
+            <p class="text-sm text-gray-500">Current default: {{ viz_data.current_level }}</p>
+        </div>
+        <div class="divide-y">
+            {% for level in viz_data.isolation_levels %}
+            <div class="p-4 {% if level.level == 'REPEATABLE READ' %}bg-indigo-50{% endif %}">
+                <div class="flex items-center justify-between mb-2">
+                    <h5 class="font-bold {% if level.level == 'REPEATABLE READ' %}text-indigo-700{% endif %}">
+                        {{ level.level }}
+                        {% if level.level == 'REPEATABLE READ' %}
+                        <span class="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded">MySQL Default</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <p class="text-sm text-gray-600 mb-3">{{ level.description }}</p>
+
+                <!-- Problems -->
+                <div class="flex flex-wrap gap-2 mb-3">
+                    {% for problem in level.problems %}
+                    <span class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">{{ problem }}</span>
+                    {% endfor %}
+                </div>
+
+                <!-- Timeline scenario -->
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <h6 class="text-sm font-medium mb-2">{{ level.scenario.title }}</h6>
+                    <div class="space-y-1">
+                        {% for step in level.scenario.timeline %}
+                        <div class="flex items-center text-xs">
+                            <span class="w-8 font-mono font-bold {% if step.t == 'T1' %}text-blue-600{% else %}text-green-600{% endif %}">{{ step.t }}</span>
+                            <span class="flex-grow">{{ step.action }}</span>
+                            <span class="text-gray-400">{{ step.state }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <p class="text-xs text-gray-500 mt-2">Use when: {{ level.use_case }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Lock types -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-yellow-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-yellow-800">Lock Types</h4>
+        </div>
+        <div class="grid md:grid-cols-2 gap-4 p-4">
+            {% for lock in viz_data.lock_types %}
+            <div class="border rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <h5 class="font-semibold">{{ lock.name }}</h5>
+                    <span class="text-xs text-gray-400">({{ lock.aka }})</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">{{ lock.description }}</p>
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded block mb-2">{{ lock.sql }}</code>
+                <div class="flex gap-2 text-xs">
+                    <span class="text-green-600">✓ {{ lock.compatible_with | join(', ') or 'None' }}</span>
+                    <span class="text-red-600">✗ Blocks: {{ lock.blocks | join(', ') }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Deadlock example -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-red-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-red-800">{{ viz_data.deadlock_example.title }}</h4>
+        </div>
+        <div class="p-4">
+            <div class="space-y-2 mb-4">
+                {% for step in viz_data.deadlock_example.transactions %}
+                <div class="flex items-center p-2 rounded {% if 'DEADLOCK' in step.lock %}bg-red-100{% elif 'Waits' in step.lock %}bg-yellow-50{% else %}bg-gray-50{% endif %}">
+                    <span class="w-8 font-mono font-bold {% if step.t == 'T1' %}text-blue-600{% else %}text-green-600{% endif %}">{{ step.t }}</span>
+                    <span class="w-8 text-center text-gray-400">{{ step.step }}</span>
+                    <code class="text-sm flex-grow">{{ step.action }}</code>
+                    <span class="text-xs text-gray-500">{{ step.lock }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="bg-red-50 rounded p-3 mb-4">
+                <p class="text-sm text-red-700"><strong>Resolution:</strong> {{ viz_data.deadlock_example.resolution }}</p>
+            </div>
+
+            <h5 class="font-medium mb-2">Prevention Tips:</h5>
+            <ul class="space-y-1">
+                {% for tip in viz_data.deadlock_example.prevention %}
+                <li class="text-sm text-gray-600 flex items-start">
+                    <span class="text-green-500 mr-2">✓</span>{{ tip }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/transactions/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>◀ Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/transactions/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next ▶</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-indigo-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

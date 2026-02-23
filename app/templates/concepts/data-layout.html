@@ -1,0 +1,563 @@
+<div class="space-y-6" x-data="dataLayoutDemo()">
+    <!-- Hero: Overview -->
+    <div class="bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-2">{{ viz_data.overview.title }}</h3>
+        <p class="text-teal-100 mb-4">{{ viz_data.overview.key_insight }}</p>
+
+        <!-- Storage Hierarchy -->
+        <div class="grid grid-cols-5 gap-2 text-sm">
+            {% for name, desc in viz_data.overview.structure.items() %}
+            <div class="bg-white/20 rounded p-2 text-center">
+                <div class="font-bold">{{ name | capitalize }}</div>
+                <div class="text-xs text-teal-200">{{ desc }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Why This Matters -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Why Data Layout Matters</h4>
+        </div>
+        <div class="p-4">
+            <ul class="grid md:grid-cols-2 gap-3">
+                {% for point in viz_data.overview.why_matters %}
+                <li class="flex items-start gap-2 bg-gray-50 p-3 rounded">
+                    <span class="text-teal-500 font-bold">*</span>
+                    <span>{{ point }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Clustered Index -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-blue-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-blue-800">{{ viz_data.clustered_index.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.clustered_index.description }}</p>
+
+            <!-- Key Points -->
+            <div class="grid md:grid-cols-2 gap-2 mb-6">
+                {% for point in viz_data.clustered_index.key_points %}
+                <div class="bg-blue-50 rounded p-3 text-sm">{{ point }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- B+Tree Visualization -->
+            <div class="border rounded-lg overflow-hidden mb-6">
+                <div class="bg-blue-100 px-4 py-2 font-medium">
+                    {{ viz_data.clustered_index.btree_visualization.description }}
+                </div>
+                <div class="p-4">
+                    <!-- Internal Node (Root) -->
+                    <div class="flex justify-center mb-4">
+                        <div class="bg-blue-200 border-2 border-blue-400 rounded-lg px-6 py-3 text-center">
+                            <div class="text-xs text-blue-600 mb-1">Internal Node (Root)</div>
+                            <div class="font-mono text-lg">
+                                {% for node in viz_data.clustered_index.btree_visualization.internal_nodes %}
+                                key: {{ node.keys | join(', ') }}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Arrows -->
+                    <div class="flex justify-center gap-32 mb-2">
+                        <div class="text-gray-400 text-2xl">&#8601;</div>
+                        <div class="text-gray-400 text-2xl">&#8600;</div>
+                    </div>
+
+                    <!-- Leaf Nodes -->
+                    <div class="flex gap-4 justify-center">
+                        {% for leaf in viz_data.clustered_index.btree_visualization.leaf_nodes %}
+                        <div class="border-2 border-green-400 rounded-lg overflow-hidden flex-1 max-w-sm bg-green-50">
+                            <div class="bg-green-200 px-3 py-1 text-sm font-medium">
+                                Leaf: {{ leaf.range }}
+                            </div>
+                            <div class="p-3">
+                                <table class="w-full text-xs">
+                                    <thead class="bg-green-100">
+                                        <tr>
+                                            <th class="px-2 py-1">id</th>
+                                            <th class="px-2 py-1">name</th>
+                                            <th class="px-2 py-1">salary</th>
+                                            <th class="px-2 py-1">dept_id</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for row in leaf.rows %}
+                                        <tr class="border-t">
+                                            <td class="px-2 py-1 font-bold text-blue-600">{{ row.id }}</td>
+                                            <td class="px-2 py-1">{{ row.name }}</td>
+                                            <td class="px-2 py-1">{{ row.salary }}</td>
+                                            <td class="px-2 py-1">{{ row.dept_id }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                                <div class="mt-2 text-xs text-green-700 bg-green-100 p-2 rounded">
+                                    {{ leaf.note }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lookup Example -->
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-100 px-4 py-2">
+                    <code class="text-sm">{{ viz_data.clustered_index.lookup_example.query }}</code>
+                </div>
+                <div class="p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <button @click="animatePKLookup()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                            Animate Lookup
+                        </button>
+                        <button @click="resetPKLookup()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                            Reset
+                        </button>
+                    </div>
+
+                    <div class="space-y-2">
+                        {% for step in viz_data.clustered_index.lookup_example.steps %}
+                        <div class="flex items-center gap-4 p-3 rounded transition-colors duration-300"
+                             :class="pkLookupStep >= {{ step.step }} ? 'bg-blue-100' : 'bg-gray-50'">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors duration-300"
+                                 :class="pkLookupStep >= {{ step.step }} ? 'bg-blue-500 text-white' : 'bg-gray-300'">
+                                {{ step.step }}
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-medium">{{ step.action }}</div>
+                                <div class="text-sm text-gray-500">{{ step.result }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mt-4 bg-green-100 rounded p-3 text-sm text-green-800">
+                        <span class="font-bold">I/O Cost:</span> {{ viz_data.clustered_index.lookup_example.io_cost }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- PK Design Tips -->
+            <div class="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h5 class="font-bold text-yellow-800 mb-2">Primary Key Design Tips</h5>
+                <ul class="text-sm space-y-1">
+                    {% for tip in viz_data.clustered_index.pk_design_tips %}
+                    <li class="flex items-start gap-2">
+                        <span class="text-yellow-600">-</span>
+                        <span>{{ tip }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Index -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-orange-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-orange-800">{{ viz_data.secondary_index.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-2">{{ viz_data.secondary_index.description }}</p>
+            <div class="bg-orange-100 rounded p-3 mb-4 font-medium text-orange-800">
+                {{ viz_data.secondary_index.key_insight }}
+            </div>
+
+            <!-- Structure -->
+            <div class="grid md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-green-50 rounded-lg p-4">
+                    <h5 class="font-bold text-green-700 mb-2">What's Stored in Secondary Index</h5>
+                    <div class="text-sm">{{ viz_data.secondary_index.structure.leaf_contents }}</div>
+                </div>
+                <div class="bg-red-50 rounded-lg p-4">
+                    <h5 class="font-bold text-red-700 mb-2">What's NOT Stored</h5>
+                    <div class="text-sm">{{ viz_data.secondary_index.structure.not_stored }}</div>
+                </div>
+            </div>
+
+            <!-- B+Tree Visualization for Secondary Index -->
+            <div class="border rounded-lg overflow-hidden mb-6">
+                <div class="bg-orange-100 px-4 py-2 font-medium">
+                    {{ viz_data.secondary_index.btree_visualization.description }}
+                </div>
+                <div class="p-4 flex gap-4 justify-center overflow-x-auto">
+                    {% for leaf in viz_data.secondary_index.btree_visualization.leaf_nodes %}
+                    <div class="border-2 border-orange-400 rounded-lg overflow-hidden flex-shrink-0 bg-orange-50">
+                        <div class="bg-orange-200 px-3 py-1 text-sm font-medium">Secondary Index Leaf</div>
+                        <div class="p-3">
+                            <table class="text-xs">
+                                <thead class="bg-orange-100">
+                                    <tr>
+                                        <th class="px-3 py-1">name (indexed)</th>
+                                        <th class="px-3 py-1">id (PK)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entry in leaf.entries %}
+                                    <tr class="border-t">
+                                        <td class="px-3 py-1 font-medium">{{ entry.name }}</td>
+                                        <td class="px-3 py-1 text-blue-600">{{ entry.pk }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            <div class="mt-2 text-xs text-orange-700 bg-orange-100 p-2 rounded">
+                                {{ leaf.note }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Double Lookup Animation -->
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-100 px-4 py-2">
+                    <code class="text-sm">{{ viz_data.secondary_index.double_lookup_example.query }}</code>
+                </div>
+                <div class="p-4">
+                    <div class="flex items-center gap-2 mb-3">
+                        <button @click="animateDoubleLookup()" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
+                            Animate Double Lookup
+                        </button>
+                        <button @click="resetDoubleLookup()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                            Reset
+                        </button>
+                    </div>
+
+                    <div class="space-y-2">
+                        {% for step in viz_data.secondary_index.double_lookup_example.steps %}
+                        <div class="flex items-center gap-4 p-3 rounded transition-colors duration-300"
+                             :class="doubleLookupStep >= {{ step.step }} ? ({{ step.step }} <= 1 ? 'bg-orange-100' : 'bg-blue-100') : 'bg-gray-50'">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm transition-colors duration-300"
+                                 :class="doubleLookupStep >= {{ step.step }} ? ({{ step.step }} <= 1 ? 'bg-orange-500 text-white' : 'bg-blue-500 text-white') : 'bg-gray-300'">
+                                {{ step.step }}
+                            </div>
+                            <div class="flex-1">
+                                <div class="font-medium">{{ step.action }}</div>
+                                <div class="text-sm text-gray-500">
+                                    <span class="font-medium">{{ step.location }}:</span> {{ step.result }}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mt-4 bg-red-100 rounded p-3 text-sm text-red-800">
+                        <span class="font-bold">I/O Cost:</span> {{ viz_data.secondary_index.double_lookup_example.io_cost }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Covering Index -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-green-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-green-800">{{ viz_data.covering_index.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-2">{{ viz_data.covering_index.description }}</p>
+            <div class="bg-green-100 rounded p-3 mb-4 font-medium text-green-800">
+                {{ viz_data.covering_index.key_insight }}
+            </div>
+
+            <!-- Examples -->
+            <div class="space-y-4 mb-6">
+                {% for ex in viz_data.covering_index.examples %}
+                <div class="border rounded-lg overflow-hidden {% if ex.covered %}border-green-300 bg-green-50{% else %}border-red-300 bg-red-50{% endif %}">
+                    <div class="px-4 py-2 {% if ex.covered %}bg-green-200{% else %}bg-red-200{% endif %} flex items-center justify-between">
+                        <span class="font-medium">{{ ex.name }}</span>
+                        <span class="text-xs px-2 py-1 rounded {% if ex.covered %}bg-green-500 text-white{% else %}bg-red-500 text-white{% endif %}">
+                            {% if ex.covered %}Covering{% else %}Not Covering{% endif %}
+                        </span>
+                    </div>
+                    <div class="p-4">
+                        <div class="text-sm mb-2"><span class="font-medium">Index:</span> <code class="bg-white px-2 py-0.5 rounded">{{ ex.index }}</code></div>
+                        <div class="text-sm mb-2"><span class="font-medium">Query:</span> <code class="bg-white px-2 py-0.5 rounded text-xs">{{ ex.query }}</code></div>
+                        <div class="text-sm mb-2"><span class="font-medium">Why:</span> {{ ex.why }}</div>
+                        <div class="text-sm"><span class="font-medium">EXPLAIN Extra:</span> <code class="{% if ex.extra == 'Using index' %}text-green-700{% else %}text-gray-500{% endif %}">{{ ex.extra | default('(none)') }}</code></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Comparison Demo -->
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-100 px-4 py-2 font-medium">{{ viz_data.covering_index.demo_comparison.title }}</div>
+                <div class="p-4">
+                    <code class="bg-gray-100 px-3 py-1 rounded text-sm block mb-4">{{ viz_data.covering_index.demo_comparison.query }}</code>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        {% for scenario in viz_data.covering_index.demo_comparison.scenarios %}
+                        <div class="border rounded-lg p-4 {% if loop.index == 2 %}bg-green-50 border-green-300{% else %}bg-red-50 border-red-300{% endif %}">
+                            <code class="text-xs bg-white px-2 py-1 rounded block mb-3">{{ scenario.index }}</code>
+                            <div class="text-sm space-y-1">
+                                <div><span class="font-medium">Pages:</span> {{ scenario.pages_read }}</div>
+                                <div><span class="font-medium">I/O:</span> {{ scenario.io_pattern }}</div>
+                                <div><span class="font-medium">Result:</span> {{ scenario.performance }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Design Tips -->
+            <div class="mt-4 bg-green-100 border border-green-300 rounded-lg p-4">
+                <h5 class="font-bold text-green-800 mb-2">Covering Index Design Tips</h5>
+                <ul class="text-sm space-y-1">
+                    {% for tip in viz_data.covering_index.design_tips %}
+                    <li class="flex items-start gap-2">
+                        <span class="text-green-600">-</span>
+                        <span>{{ tip }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Page Structure -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-purple-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-purple-800">{{ viz_data.page_structure.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.page_structure.description }}</p>
+
+            <!-- Page Layout Visual -->
+            <div class="border-2 border-purple-300 rounded-lg overflow-hidden mb-6">
+                <div class="bg-purple-200 px-4 py-2 text-center font-medium">16KB Page</div>
+                {% for section in viz_data.page_structure.page_layout %}
+                <div class="border-t border-purple-200 flex">
+                    <div class="w-1/4 bg-purple-50 px-3 py-2 text-sm font-medium">{{ section.section }}</div>
+                    <div class="w-1/4 px-3 py-2 text-sm text-gray-500">{{ section.size }}</div>
+                    <div class="flex-1 px-3 py-2 text-sm">{{ section.purpose }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Row Storage -->
+            <div class="border rounded-lg overflow-hidden mb-6">
+                <div class="bg-gray-100 px-4 py-2 font-medium">Row Storage Overhead</div>
+                <div class="p-4">
+                    <p class="text-sm text-gray-600 mb-3">{{ viz_data.page_structure.row_storage.description }}</p>
+
+                    <div class="space-y-2 mb-4">
+                        {% for comp in viz_data.page_structure.row_storage.components %}
+                        <div class="flex items-center gap-4 bg-gray-50 p-3 rounded">
+                            <div class="font-medium">{{ comp.name }}</div>
+                            <div class="text-sm text-gray-500">{{ comp.size }}</div>
+                            <div class="text-sm text-gray-600">{{ comp.purpose }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="bg-purple-50 rounded p-4">
+                        <h5 class="font-medium text-purple-700 mb-2">Example Row Size</h5>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            <div><span class="text-gray-500">Columns:</span> {{ viz_data.page_structure.row_storage.example.columns }}</div>
+                            <div><span class="text-gray-500">User Data:</span> {{ viz_data.page_structure.row_storage.example.user_data }}</div>
+                            <div><span class="text-gray-500">Overhead:</span> {{ viz_data.page_structure.row_storage.example.overhead }}</div>
+                            <div><span class="text-gray-500">Total:</span> <strong>{{ viz_data.page_structure.row_storage.example.total }}</strong></div>
+                        </div>
+                        <div class="mt-2 text-sm text-purple-600">{{ viz_data.page_structure.row_storage.example.rows_per_page }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Why SELECT * is bad -->
+            <div class="border rounded-lg overflow-hidden border-red-300">
+                <div class="bg-red-100 px-4 py-2 font-medium text-red-800">{{ viz_data.page_structure.why_select_star_bad.title }}</div>
+                <div class="p-4">
+                    <ul class="space-y-2 mb-4">
+                        {% for reason in viz_data.page_structure.why_select_star_bad.reasons %}
+                        <li class="flex items-start gap-2 text-sm">
+                            <span class="text-red-500 font-bold">x</span>
+                            <span>{{ reason }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="bg-red-50 rounded p-3">
+                            <div class="text-xs text-red-500 font-medium mb-1">Bad:</div>
+                            <code class="text-xs text-red-700">{{ viz_data.page_structure.why_select_star_bad.demo.bad_query }}</code>
+                        </div>
+                        <div class="bg-green-50 rounded p-3">
+                            <div class="text-xs text-green-500 font-medium mb-1">Good:</div>
+                            <code class="text-xs text-green-700">{{ viz_data.page_structure.why_select_star_bad.demo.good_query }}</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPLAIN Examples -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-indigo-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-indigo-800">{{ viz_data.explain_examples.title }}</h4>
+        </div>
+        <div class="p-4">
+            <!-- Key Columns -->
+            <div class="mb-6 overflow-x-auto">
+                <table class="w-full text-sm border rounded">
+                    <thead class="bg-indigo-100">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Column</th>
+                            <th class="px-3 py-2 text-left text-green-700">Good Values</th>
+                            <th class="px-3 py-2 text-left text-red-700">Bad Values</th>
+                            <th class="px-3 py-2 text-left">Meaning</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for col in viz_data.explain_examples.key_columns %}
+                        <tr class="border-t">
+                            <td class="px-3 py-2 font-mono font-medium">{{ col.column }}</td>
+                            <td class="px-3 py-2 text-green-700">{{ col.good }}</td>
+                            <td class="px-3 py-2 text-red-700">{{ col.bad }}</td>
+                            <td class="px-3 py-2 text-gray-600">{{ col.meaning }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Examples -->
+            <div class="space-y-4">
+                {% for ex in viz_data.explain_examples.examples %}
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-gray-100 px-4 py-2">
+                        <code class="text-sm">{{ ex.query }}</code>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-4 gap-2 mb-3 text-sm">
+                            <div class="bg-gray-50 rounded p-2">
+                                <span class="text-xs text-gray-500">type:</span>
+                                <span class="block font-mono {% if ex.explain.type in ['const', 'eq_ref', 'ref'] %}text-green-600{% else %}text-red-600{% endif %}">{{ ex.explain.type }}</span>
+                            </div>
+                            <div class="bg-gray-50 rounded p-2">
+                                <span class="text-xs text-gray-500">key:</span>
+                                <span class="block font-mono {% if ex.explain.key %}text-green-600{% else %}text-red-600{% endif %}">{{ ex.explain.key | default('NULL') }}</span>
+                            </div>
+                            <div class="bg-gray-50 rounded p-2">
+                                <span class="text-xs text-gray-500">rows:</span>
+                                <span class="block font-mono">{{ ex.explain.rows }}</span>
+                            </div>
+                            <div class="bg-gray-50 rounded p-2">
+                                <span class="text-xs text-gray-500">Extra:</span>
+                                <span class="block font-mono text-xs {% if ex.explain.extra == 'Using index' %}text-green-600{% elif 'filesort' in (ex.explain.extra | default('')) %}text-red-600{% endif %}">{{ ex.explain.extra | default('(none)') }}</span>
+                            </div>
+                        </div>
+                        <div class="text-sm text-indigo-700">{{ ex.analysis }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Optimization Tips -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Optimization Tips</h4>
+        </div>
+        <div class="divide-y">
+            {% for tip in viz_data.optimization_tips %}
+            <div class="p-4">
+                <h5 class="font-bold text-gray-800 mb-2">{{ tip.tip }}</h5>
+                <p class="text-sm text-gray-600 mb-3">{{ tip.why }}</p>
+                <div class="grid md:grid-cols-2 gap-3">
+                    <div class="bg-green-50 rounded p-3">
+                        <span class="text-xs text-green-600 font-medium">DO:</span>
+                        <code class="block text-xs text-green-700 mt-1">{{ tip.do }}</code>
+                    </div>
+                    <div class="bg-red-50 rounded p-3">
+                        <span class="text-xs text-red-600 font-medium">DON'T:</span>
+                        <code class="block text-xs text-red-700 mt-1">{{ tip.dont }}</code>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Learning Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/data-layout/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/data-layout/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-teal-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function dataLayoutDemo() {
+    return {
+        pkLookupStep: 0,
+        doubleLookupStep: 0,
+
+        animatePKLookup() {
+            this.pkLookupStep = 0;
+            let step = 0;
+            const interval = setInterval(() => {
+                step++;
+                this.pkLookupStep = step;
+                if (step >= 3) {
+                    clearInterval(interval);
+                }
+            }, 700);
+        },
+
+        resetPKLookup() {
+            this.pkLookupStep = 0;
+        },
+
+        animateDoubleLookup() {
+            this.doubleLookupStep = 0;
+            let step = 0;
+            const interval = setInterval(() => {
+                step++;
+                this.doubleLookupStep = step;
+                if (step >= 3) {
+                    clearInterval(interval);
+                }
+            }, 800);
+        },
+
+        resetDoubleLookup() {
+            this.doubleLookupStep = 0;
+        }
+    }
+}
+</script>
+
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

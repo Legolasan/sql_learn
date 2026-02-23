@@ -1,0 +1,544 @@
+<div class="space-y-6" x-data="windowFunctionsDemo()">
+    <!-- Hero: Overview -->
+    <div class="bg-gradient-to-r from-violet-600 to-purple-600 text-white rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-2">{{ viz_data.overview.title }}</h3>
+        <p class="text-violet-100 mb-4">{{ viz_data.overview.key_concept }}</p>
+
+        <!-- Syntax Anatomy -->
+        <div class="bg-white/20 rounded-lg p-4 font-mono text-sm">
+            <div class="flex flex-wrap gap-1 items-center">
+                <span class="bg-yellow-400 text-yellow-900 px-2 py-1 rounded">function()</span>
+                <span class="text-violet-200">OVER (</span>
+                <span class="bg-blue-400 text-blue-900 px-2 py-1 rounded">PARTITION BY col</span>
+                <span class="bg-green-400 text-green-900 px-2 py-1 rounded">ORDER BY col</span>
+                <span class="bg-orange-400 text-orange-900 px-2 py-1 rounded">ROWS BETWEEN ...</span>
+                <span class="text-violet-200">)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- GROUP BY vs Window Comparison -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">GROUP BY vs Window Functions</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            <div class="border rounded-lg p-4 bg-red-50">
+                <h5 class="font-bold text-red-700 mb-2">GROUP BY (Collapses Rows)</h5>
+                <pre class="bg-white rounded p-2 text-xs mb-2">{{ viz_data.overview.comparison.group_by.query }}</pre>
+                <div class="text-sm text-red-600">Result: {{ viz_data.overview.comparison.group_by.result_rows }}</div>
+            </div>
+            <div class="border rounded-lg p-4 bg-green-50">
+                <h5 class="font-bold text-green-700 mb-2">Window Function (Keeps All Rows)</h5>
+                <pre class="bg-white rounded p-2 text-xs mb-2">{{ viz_data.overview.comparison.window.query }}</pre>
+                <div class="text-sm text-green-600">Result: {{ viz_data.overview.comparison.window.result_rows }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ranking Functions Interactive Demo -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-yellow-50 px-4 py-3 border-b flex items-center justify-between">
+            <h4 class="font-semibold text-yellow-800">{{ viz_data.ranking_functions.title }}</h4>
+            <div class="flex gap-2">
+                <button @click="selectedRanking = 'row_number'"
+                    :class="selectedRanking === 'row_number' ? 'bg-yellow-500 text-white' : 'bg-yellow-100'"
+                    class="px-3 py-1 rounded text-sm">ROW_NUMBER</button>
+                <button @click="selectedRanking = 'rank'"
+                    :class="selectedRanking === 'rank' ? 'bg-yellow-500 text-white' : 'bg-yellow-100'"
+                    class="px-3 py-1 rounded text-sm">RANK</button>
+                <button @click="selectedRanking = 'dense_rank'"
+                    :class="selectedRanking === 'dense_rank' ? 'bg-yellow-500 text-white' : 'bg-yellow-100'"
+                    class="px-3 py-1 rounded text-sm">DENSE_RANK</button>
+            </div>
+        </div>
+        <div class="p-4">
+            {% for func in viz_data.ranking_functions.functions %}
+            <div x-show="selectedRanking === '{{ func.name | lower | replace('()', '') }}'" x-transition>
+                <div class="mb-4">
+                    <code class="bg-gray-100 px-3 py-1 rounded text-sm">{{ func.syntax }}</code>
+                    <p class="text-gray-600 text-sm mt-2">{{ func.description }}</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <!-- Source -->
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="bg-gray-100 px-3 py-2 text-sm font-medium">Source Data</div>
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">name</th>
+                                    <th class="px-3 py-2 text-left">salary</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in viz_data.ranking_functions.source_data %}
+                                <tr class="border-t hover:bg-gray-50">
+                                    <td class="px-3 py-2">{{ row.name }}</td>
+                                    <td class="px-3 py-2">{{ row.salary | default(0) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Result -->
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="bg-yellow-100 px-3 py-2 text-sm font-medium">Result</div>
+                        <table class="w-full text-sm">
+                            <thead class="bg-yellow-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">name</th>
+                                    <th class="px-3 py-2 text-left">salary</th>
+                                    <th class="px-3 py-2 text-left bg-yellow-200">{{ func.name }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in func.result %}
+                                <tr class="border-t hover:bg-yellow-50">
+                                    <td class="px-3 py-2">{{ row.name }}</td>
+                                    <td class="px-3 py-2">{{ row.salary }}</td>
+                                    <td class="px-3 py-2 font-bold text-yellow-700">
+                                        {{ row.row_num if row.row_num else (row.rank if row.rank else row.dense_rank) }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {% if func.note %}
+                <div class="mt-3 bg-yellow-50 border border-yellow-200 rounded p-3 text-sm text-yellow-800">
+                    {{ func.note }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- LEAD/LAG Demo -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-blue-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-blue-800">{{ viz_data.offset_functions.title }}</h4>
+        </div>
+        <div class="p-4">
+            <div class="grid md:grid-cols-2 gap-6">
+                {% for func in viz_data.offset_functions.functions %}
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="bg-blue-100 px-3 py-2">
+                        <span class="font-bold">{{ func.name }}</span>
+                        <p class="text-sm text-blue-700">{{ func.description }}</p>
+                    </div>
+                    <div class="p-3">
+                        <code class="bg-gray-100 px-2 py-1 rounded text-xs block mb-3">{{ func.syntax }}</code>
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-2 py-1 text-left">month</th>
+                                    <th class="px-2 py-1 text-left">sales</th>
+                                    <th class="px-2 py-1 text-left bg-blue-100">
+                                        {{ 'prev_sales' if func.name == 'LAG()' else 'next_sales' }}
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in func.result %}
+                                <tr class="border-t">
+                                    <td class="px-2 py-1">{{ row.month }}</td>
+                                    <td class="px-2 py-1">{{ row.sales }}</td>
+                                    <td class="px-2 py-1 font-medium {% if row.prev_sales is none and row.next_sales is none %}text-gray-400{% else %}text-blue-700{% endif %}">
+                                        {{ row.prev_sales if row.prev_sales is not none else (row.next_sales if row.next_sales is not none else 'NULL') }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- MoM Change Example -->
+            <div class="mt-6 border-t pt-4">
+                <h5 class="font-semibold mb-3">{{ viz_data.offset_functions.change_calculation.title }}</h5>
+                <pre class="bg-gray-100 rounded p-3 text-xs overflow-x-auto mb-3">{{ viz_data.offset_functions.change_calculation.query }}</pre>
+                <table class="w-full text-sm border rounded overflow-hidden">
+                    <thead class="bg-green-100">
+                        <tr>
+                            <th class="px-2 py-1 text-left">month</th>
+                            <th class="px-2 py-1 text-left">sales</th>
+                            <th class="px-2 py-1 text-left">prev_sales</th>
+                            <th class="px-2 py-1 text-left">change</th>
+                            <th class="px-2 py-1 text-left">pct_change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in viz_data.offset_functions.change_calculation.result %}
+                        <tr class="border-t">
+                            <td class="px-2 py-1">{{ row.month }}</td>
+                            <td class="px-2 py-1">{{ row.sales }}</td>
+                            <td class="px-2 py-1 {% if row.prev_sales is none %}text-gray-400{% endif %}">
+                                {{ row.prev_sales if row.prev_sales is not none else 'NULL' }}
+                            </td>
+                            <td class="px-2 py-1 {% if row.change and row.change > 0 %}text-green-600{% elif row.change and row.change < 0 %}text-red-600{% else %}text-gray-400{% endif %}">
+                                {{ ('+' if row.change and row.change > 0 else '') }}{{ row.change if row.change is not none else 'NULL' }}
+                            </td>
+                            <td class="px-2 py-1 {% if row.pct_change and row.pct_change > 0 %}text-green-600{% elif row.pct_change and row.pct_change < 0 %}text-red-600{% else %}text-gray-400{% endif %}">
+                                {{ row.pct_change | string + '%' if row.pct_change is not none else 'NULL' }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Running Total Animation -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-green-50 px-4 py-3 border-b flex items-center justify-between">
+            <h4 class="font-semibold text-green-800">{{ viz_data.aggregate_windows.running_total.name }}</h4>
+            <div class="flex gap-2">
+                <button @click="resetRunningTotal()" class="px-3 py-1 bg-gray-200 rounded text-sm">Reset</button>
+                <button @click="animateRunningTotal()"
+                    class="px-3 py-1 bg-green-500 text-white rounded text-sm">Animate</button>
+            </div>
+        </div>
+        <div class="p-4">
+            <code class="bg-gray-100 px-3 py-1 rounded text-sm block mb-4">{{ viz_data.aggregate_windows.running_total.syntax }}</code>
+
+            <table class="w-full text-sm border rounded overflow-hidden">
+                <thead class="bg-green-100">
+                    <tr>
+                        <th class="px-3 py-2 text-left">day</th>
+                        <th class="px-3 py-2 text-left">sales</th>
+                        <th class="px-3 py-2 text-left">calculation</th>
+                        <th class="px-3 py-2 text-left bg-green-200">running_total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in viz_data.aggregate_windows.running_total.result %}
+                    <tr class="border-t transition-colors duration-300"
+                        :class="{ 'bg-green-100': runningTotalStep >= {{ loop.index }} }">
+                        <td class="px-3 py-2">{{ row.day }}</td>
+                        <td class="px-3 py-2">{{ row.sales }}</td>
+                        <td class="px-3 py-2 font-mono text-xs text-gray-600"
+                            x-show="runningTotalStep >= {{ loop.index }}">
+                            {{ viz_data.aggregate_windows.running_total.animation_steps[loop.index0].calculation }}
+                        </td>
+                        <td class="px-3 py-2 font-bold text-green-700"
+                            x-show="runningTotalStep >= {{ loop.index }}">
+                            {{ row.running_total }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Window Frames -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-orange-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-orange-800">{{ viz_data.window_frames.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.window_frames.key_concept }}</p>
+
+            <!-- Frame Types Visual -->
+            <div class="grid md:grid-cols-2 gap-3 mb-6">
+                {% for frame in viz_data.window_frames.frame_types %}
+                <div class="border rounded-lg p-3">
+                    <div class="font-medium text-sm mb-1">{{ frame.name }}</div>
+                    <code class="text-xs bg-gray-100 px-2 py-1 rounded block mb-2">{{ frame.syntax }}</code>
+                    <div class="font-mono text-lg text-orange-600">{{ frame.visual }}</div>
+                    <div class="text-xs text-gray-500 mt-1">{{ frame.description }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Moving Average Demo -->
+            <div class="border-t pt-4">
+                <h5 class="font-semibold mb-3">{{ viz_data.window_frames.moving_average.title }}</h5>
+                <code class="bg-gray-100 px-3 py-1 rounded text-xs block mb-3">{{ viz_data.window_frames.moving_average.syntax }}</code>
+                <table class="w-full text-sm border rounded overflow-hidden">
+                    <thead class="bg-orange-100">
+                        <tr>
+                            <th class="px-2 py-1 text-left">day</th>
+                            <th class="px-2 py-1 text-left">temp</th>
+                            <th class="px-2 py-1 text-left">window</th>
+                            <th class="px-2 py-1 text-left bg-orange-200">moving_avg</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in viz_data.window_frames.moving_average.result %}
+                        <tr class="border-t">
+                            <td class="px-2 py-1">{{ row.day }}</td>
+                            <td class="px-2 py-1">{{ row.temp }}</td>
+                            <td class="px-2 py-1 font-mono text-xs text-gray-600">{{ row.window }}</td>
+                            <td class="px-2 py-1 font-bold text-orange-700">{{ row.moving_avg }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top N Per Group -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-purple-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-purple-800">{{ viz_data.top_n_per_group.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.top_n_per_group.description }}</p>
+
+            <!-- Window Solution -->
+            <div class="mb-6">
+                <h5 class="font-semibold text-green-700 mb-2">Window Function Solution</h5>
+                <pre class="bg-gray-100 rounded p-3 text-xs overflow-x-auto mb-3">{{ viz_data.top_n_per_group.window_solution.query }}</pre>
+
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="border rounded overflow-hidden">
+                        <div class="bg-gray-100 px-3 py-2 text-sm font-medium">Step 1: Add row numbers</div>
+                        <div class="max-h-48 overflow-y-auto">
+                            <table class="w-full text-xs">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th class="px-2 py-1 text-left">name</th>
+                                        <th class="px-2 py-1 text-left">dept</th>
+                                        <th class="px-2 py-1 text-left">salary</th>
+                                        <th class="px-2 py-1 text-left bg-purple-100">rn</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in viz_data.top_n_per_group.window_solution.step1_result %}
+                                    <tr class="border-t {% if row.rn <= 2 %}bg-green-50{% endif %}">
+                                        <td class="px-2 py-1">{{ row.name }}</td>
+                                        <td class="px-2 py-1">{{ row.dept }}</td>
+                                        <td class="px-2 py-1">{{ row.salary }}</td>
+                                        <td class="px-2 py-1 font-bold {% if row.rn <= 2 %}text-green-700{% else %}text-gray-400{% endif %}">
+                                            {{ row.rn }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="border rounded overflow-hidden">
+                        <div class="bg-green-100 px-3 py-2 text-sm font-medium">Step 2: Filter rn <= 2</div>
+                        <table class="w-full text-xs">
+                            <thead class="bg-green-50">
+                                <tr>
+                                    <th class="px-2 py-1 text-left">name</th>
+                                    <th class="px-2 py-1 text-left">dept</th>
+                                    <th class="px-2 py-1 text-left">salary</th>
+                                    <th class="px-2 py-1 text-left">rn</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in viz_data.top_n_per_group.window_solution.final_result %}
+                                <tr class="border-t">
+                                    <td class="px-2 py-1">{{ row.name }}</td>
+                                    <td class="px-2 py-1">{{ row.dept }}</td>
+                                    <td class="px-2 py-1">{{ row.salary }}</td>
+                                    <td class="px-2 py-1 font-bold text-green-700">{{ row.rn }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison -->
+            <div class="grid md:grid-cols-2 gap-4 mt-6">
+                <div class="border rounded-lg p-4 bg-green-50">
+                    <h6 class="font-bold text-green-700 mb-2">Window Function</h6>
+                    <ul class="text-sm text-green-700 space-y-1">
+                        <li>Complexity: {{ viz_data.top_n_per_group.comparison.window_function.complexity }}</li>
+                        <li>{{ viz_data.top_n_per_group.comparison.window_function.readability }}</li>
+                        <li>{{ viz_data.top_n_per_group.comparison.window_function.flexibility }}</li>
+                    </ul>
+                </div>
+                <div class="border rounded-lg p-4 bg-red-50">
+                    <h6 class="font-bold text-red-700 mb-2">Correlated Subquery</h6>
+                    <ul class="text-sm text-red-700 space-y-1">
+                        <li>Complexity: {{ viz_data.top_n_per_group.comparison.correlated_subquery.complexity }}</li>
+                        <li>{{ viz_data.top_n_per_group.comparison.correlated_subquery.readability }}</li>
+                        <li>{{ viz_data.top_n_per_group.comparison.correlated_subquery.flexibility }}</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="mt-3 bg-purple-100 border border-purple-300 rounded p-3 text-center font-bold text-purple-800">
+                {{ viz_data.top_n_per_group.comparison.winner }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Quiz -->
+    <div class="bg-white border rounded-lg overflow-hidden" x-data="{ currentQuiz: 0, selectedAnswer: null, showResult: false }">
+        <div class="bg-indigo-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-indigo-800">Test Your Knowledge</h4>
+        </div>
+        <div class="p-4">
+            {% for quiz in viz_data.quizzes %}
+            <div x-show="currentQuiz === {{ loop.index0 }}" x-transition>
+                <div class="mb-4">
+                    <span class="text-sm text-gray-500">Question {{ loop.index }} of {{ viz_data.quizzes | length }}</span>
+                    <p class="text-lg font-medium mt-1">{{ quiz.question }}</p>
+                </div>
+
+                <div class="space-y-2 mb-4">
+                    {% for option in quiz.options %}
+                    <button @click="selectedAnswer = '{{ option }}'; showResult = true"
+                        :class="{
+                            'bg-green-100 border-green-500': showResult && '{{ option }}' === '{{ quiz.correct }}',
+                            'bg-red-100 border-red-500': showResult && selectedAnswer === '{{ option }}' && '{{ option }}' !== '{{ quiz.correct }}',
+                            'bg-white hover:bg-gray-50': !showResult || ('{{ option }}' !== '{{ quiz.correct }}' && selectedAnswer !== '{{ option }}')
+                        }"
+                        class="w-full text-left px-4 py-3 border rounded-lg transition-colors">
+                        {{ option }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <div x-show="showResult" x-transition class="bg-indigo-50 rounded-lg p-4 mb-4">
+                    <div class="font-medium text-indigo-800 mb-1">
+                        <span x-show="selectedAnswer === '{{ quiz.correct }}'">Correct!</span>
+                        <span x-show="selectedAnswer !== '{{ quiz.correct }}'">Not quite. The answer is: {{ quiz.correct }}</span>
+                    </div>
+                    <p class="text-sm text-indigo-600">{{ quiz.explanation }}</p>
+                </div>
+
+                <div class="flex justify-between">
+                    <button @click="currentQuiz--; selectedAnswer = null; showResult = false"
+                        x-show="currentQuiz > 0"
+                        class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Previous</button>
+                    <button @click="currentQuiz++; selectedAnswer = null; showResult = false"
+                        x-show="currentQuiz < {{ viz_data.quizzes | length - 1 }}"
+                        class="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 ml-auto">Next</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Common Mistakes -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-red-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-red-800">Common Mistakes</h4>
+        </div>
+        <div class="divide-y">
+            {% for mistake in viz_data.common_mistakes %}
+            <div class="p-4">
+                <h5 class="font-medium text-red-700 mb-2">{{ mistake.mistake }}</h5>
+                <div class="grid md:grid-cols-2 gap-3 mb-2">
+                    <div class="bg-red-50 rounded p-2">
+                        <span class="text-xs text-red-500 font-medium">Wrong:</span>
+                        <code class="block text-xs text-red-700 mt-1">{{ mistake.wrong }}</code>
+                        <div class="text-xs text-red-600 mt-1">{{ mistake.why_wrong }}</div>
+                    </div>
+                    <div class="bg-green-50 rounded p-2">
+                        <span class="text-xs text-green-500 font-medium">Correct:</span>
+                        <code class="block text-xs text-green-700 mt-1">{{ mistake.correct }}</code>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Syntax Reference -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">{{ viz_data.syntax_reference.title }}</h4>
+        </div>
+        <div class="p-4">
+            <code class="bg-gray-100 px-3 py-2 rounded block mb-4 text-sm">{{ viz_data.syntax_reference.general_syntax }}</code>
+
+            <div class="grid md:grid-cols-3 gap-4">
+                <div>
+                    <h5 class="font-medium text-yellow-700 mb-2">Ranking Functions</h5>
+                    <ul class="text-sm space-y-1">
+                        {% for f in viz_data.syntax_reference.ranking_functions %}
+                        <li><code class="text-xs bg-yellow-50 px-1 rounded">{{ f.name }}</code> - {{ f.description }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-medium text-blue-700 mb-2">Offset Functions</h5>
+                    <ul class="text-sm space-y-1">
+                        {% for f in viz_data.syntax_reference.offset_functions %}
+                        <li><code class="text-xs bg-blue-50 px-1 rounded">{{ f.name }}</code> - {{ f.description }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-medium text-green-700 mb-2">Aggregate Functions</h5>
+                    <ul class="text-sm space-y-1">
+                        {% for f in viz_data.syntax_reference.aggregate_functions %}
+                        <li><code class="text-xs bg-green-50 px-1 rounded">{{ f.name }}</code> - {{ f.description }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Learning Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/window-functions/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/window-functions/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-violet-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function windowFunctionsDemo() {
+    return {
+        selectedRanking: 'row_number',
+        runningTotalStep: 0,
+
+        resetRunningTotal() {
+            this.runningTotalStep = 0;
+        },
+
+        animateRunningTotal() {
+            this.runningTotalStep = 0;
+            const maxSteps = 5;
+            let step = 0;
+            const interval = setInterval(() => {
+                step++;
+                this.runningTotalStep = step;
+                if (step >= maxSteps) {
+                    clearInterval(interval);
+                }
+            }, 600);
+        }
+    }
+}
+</script>
+
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

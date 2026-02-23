@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="text-center mb-12">
+    <h1 class="text-4xl font-bold text-gray-800 mb-4">
+        Learn MySQL Visually
+    </h1>
+    <p class="text-xl text-gray-600 max-w-2xl mx-auto">
+        Understand how MySQL works under the hood. Visualize B-trees, decode EXPLAIN outputs,
+        trace query execution, and master optimization techniques.
+    </p>
+</div>
+
+<!-- Concepts grouped by difficulty -->
+<div class="space-y-8 max-w-6xl mx-auto">
+    <!-- Beginner -->
+    <div>
+        <h2 class="text-lg font-semibold text-green-700 mb-4 flex items-center">
+            <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+            Beginner
+        </h2>
+        <div class="grid md:grid-cols-3 gap-4">
+            {% for concept in all_concepts if concept.difficulty == 'beginner' %}
+            <a href="/concept/{{ concept.name }}"
+               class="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow border border-gray-200 hover:border-green-300">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ concept.display_name }}</h3>
+                <p class="text-gray-600 text-sm">{{ concept.description }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Intermediate -->
+    <div>
+        <h2 class="text-lg font-semibold text-yellow-700 mb-4 flex items-center">
+            <span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+            Intermediate
+        </h2>
+        <div class="grid md:grid-cols-3 gap-4">
+            {% for concept in all_concepts if concept.difficulty == 'intermediate' %}
+            <a href="/concept/{{ concept.name }}"
+               class="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow border border-gray-200 hover:border-yellow-300">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ concept.display_name }}</h3>
+                <p class="text-gray-600 text-sm">{{ concept.description }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Advanced -->
+    <div>
+        <h2 class="text-lg font-semibold text-red-700 mb-4 flex items-center">
+            <span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+            Advanced
+        </h2>
+        <div class="grid md:grid-cols-3 gap-4">
+            {% for concept in all_concepts if concept.difficulty == 'advanced' %}
+            <a href="/concept/{{ concept.name }}"
+               class="bg-white rounded-lg shadow-md p-5 hover:shadow-lg transition-shadow border border-gray-200 hover:border-red-300">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ concept.display_name }}</h3>
+                <p class="text-gray-600 text-sm">{{ concept.description }}</p>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Dataset preview -->
+<div class="mt-16 max-w-5xl mx-auto">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Sample Dataset</h2>
+    <p class="text-gray-600 mb-6">
+        All visualizations use this static dataset. Queries run against simulated data:
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-lg shadow p-4">
+            <h3 class="font-semibold text-gray-700 mb-2">employees</h3>
+            <code class="text-sm text-gray-500">id, name, department_id, salary, hire_date</code>
+            <p class="text-xs text-gray-400 mt-2">20 rows</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <h3 class="font-semibold text-gray-700 mb-2">departments</h3>
+            <code class="text-sm text-gray-500">id, name, budget</code>
+            <p class="text-xs text-gray-400 mt-2">5 rows</p>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <h3 class="font-semibold text-gray-700 mb-2">orders</h3>
+            <code class="text-sm text-gray-500">id, employee_id, product, amount, order_date</code>
+            <p class="text-xs text-gray-400 mt-2">15 rows</p>
+        </div>
+    </div>
+</div>
+
+<!-- Quick tips -->
+<div class="mt-12 max-w-5xl mx-auto bg-indigo-50 rounded-lg p-6">
+    <h2 class="text-lg font-bold text-indigo-800 mb-4">Quick Tips</h2>
+    <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="flex items-start">
+            <span class="text-indigo-500 mr-2">1.</span>
+            <span>Start with <strong>B-Tree Indexing</strong> to understand how MySQL finds data</span>
+        </div>
+        <div class="flex items-start">
+            <span class="text-indigo-500 mr-2">2.</span>
+            <span>Use <strong>EXPLAIN Analysis</strong> to decode query plans</span>
+        </div>
+        <div class="flex items-start">
+            <span class="text-indigo-500 mr-2">3.</span>
+            <span>Learn <strong>Execution Order</strong> to avoid common WHERE vs HAVING mistakes</span>
+        </div>
+        <div class="flex items-start">
+            <span class="text-indigo-500 mr-2">4.</span>
+            <span>Check <strong>Query Optimization</strong> for anti-patterns in your queries</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

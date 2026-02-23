@@ -1,0 +1,343 @@
+<div class="space-y-6" x-data="{ quizAnswers: {}, showAnswers: {} }">
+    <!-- Hero: NULL explanation -->
+    <div class="bg-gradient-to-r from-rose-600 to-pink-600 text-white rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-2">{{ viz_data.null_basics.title }}</h3>
+        <p class="text-rose-100 mb-4">{{ viz_data.null_basics.definition }}</p>
+
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+            {% for rule in viz_data.null_basics.key_rules %}
+            <div class="bg-white/20 rounded-lg p-3">
+                <code class="font-bold">{{ rule.rule }}</code>
+                <div class="text-sm opacity-90 mt-1">{{ rule.explanation }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Correct NULL Usage -->
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+        <h4 class="font-semibold text-green-800 mb-3">Correct NULL Handling</h4>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {% for key, value in viz_data.null_basics.correct_usage.items() %}
+            <div class="bg-white rounded p-3 border border-green-100">
+                <code class="text-sm text-green-700 block">{{ value }}</code>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- NULL Operators Quick Reference -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">NULL Operators Reference</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-2">
+            {% for op in viz_data.null_operators %}
+            <div class="flex items-center p-2 rounded {% if op.correct %}bg-green-50{% else %}bg-red-50{% endif %}">
+                <span class="text-xl mr-2">{% if op.correct %}✓{% else %}✗{% endif %}</span>
+                <div>
+                    <code class="font-medium {% if op.correct %}text-green-700{% else %}text-red-700{% endif %}">{{ op.operator }}</code>
+                    <div class="text-xs text-gray-600">{{ op.example }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Interactive NULL Trap Quizzes -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-amber-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-amber-800">NULL Trap Quiz - Test Your Knowledge!</h4>
+            <p class="text-sm text-amber-600">Can you predict the results? Click an answer to check.</p>
+        </div>
+        <div class="divide-y">
+            {% for trap in viz_data.null_traps %}
+            <div class="p-4" x-data="{ revealed: false }">
+                <div class="flex items-center mb-2">
+                    <span class="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center text-amber-700 font-bold text-sm mr-3">{{ loop.index }}</span>
+                    <h5 class="font-medium">{{ trap.title }}</h5>
+                </div>
+
+                <div class="bg-gray-50 rounded p-3 mb-3 text-sm">
+                    <strong>Scenario:</strong> {{ trap.scenario }}
+                </div>
+
+                <p class="font-medium mb-3">{{ trap.question }}</p>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                    {% for option in trap.options %}
+                    <button
+                        @click="quizAnswers['{{ trap.id }}'] = '{{ option }}'; revealed = true"
+                        :class="{
+                            'ring-2 ring-blue-500': quizAnswers['{{ trap.id }}'] === '{{ option }}' && !revealed,
+                            'bg-green-100 ring-2 ring-green-500': revealed && '{{ option }}' === '{{ trap.correct }}',
+                            'bg-red-100': revealed && quizAnswers['{{ trap.id }}'] === '{{ option }}' && '{{ option }}' !== '{{ trap.correct }}',
+                            'opacity-50': revealed && '{{ option }}' !== '{{ trap.correct }}' && quizAnswers['{{ trap.id }}'] !== '{{ option }}'
+                        }"
+                        class="px-4 py-2 border rounded-lg text-sm font-medium hover:bg-gray-50 transition">
+                        {{ option }}
+                    </button>
+                    {% endfor %}
+                </div>
+
+                <div x-show="revealed" x-transition class="space-y-2">
+                    <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                        <div class="flex items-center mb-1">
+                            <span class="font-medium text-blue-800">Answer: {{ trap.correct }}</span>
+                        </div>
+                        <p class="text-sm text-blue-700">{{ trap.explanation }}</p>
+                    </div>
+
+                    {% if trap.fix %}
+                    <div class="bg-green-50 border border-green-200 rounded p-3">
+                        <span class="text-xs font-medium text-green-700">FIX:</span>
+                        <code class="text-sm text-green-800 block mt-1">{{ trap.fix }}</code>
+                    </div>
+                    {% endif %}
+
+                    <div class="text-xs text-gray-500">
+                        <strong>Try it:</strong>
+                        <code class="bg-gray-100 px-2 py-1 rounded ml-1">{{ trap.demo_query }}</code>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Numeric Types -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-blue-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-blue-800">Numeric Data Types</h4>
+        </div>
+        <div class="p-4">
+            {% for category in viz_data.numeric_types %}
+            <div class="mb-4 last:mb-0">
+                <h5 class="font-medium mb-2">{{ category.category }}</h5>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-2 text-left">Type</th>
+                                {% if category.types[0].range is defined %}
+                                <th class="px-3 py-2 text-left">Range (Signed)</th>
+                                <th class="px-3 py-2 text-left">Range (Unsigned)</th>
+                                <th class="px-3 py-2 text-left">Bytes</th>
+                                {% else %}
+                                <th class="px-3 py-2 text-left">Description</th>
+                                <th class="px-3 py-2 text-left">Example</th>
+                                {% endif %}
+                                <th class="px-3 py-2 text-left">Use Case</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for type in category.types %}
+                            <tr class="border-b">
+                                <td class="px-3 py-2 font-mono text-blue-600">{{ type.name }}</td>
+                                {% if type.range is defined %}
+                                <td class="px-3 py-2 text-xs">{{ type.range }}</td>
+                                <td class="px-3 py-2 text-xs">{{ type.unsigned }}</td>
+                                <td class="px-3 py-2">{{ type.bytes }}</td>
+                                {% else %}
+                                <td class="px-3 py-2">{{ type.description }}</td>
+                                <td class="px-3 py-2 text-xs">{{ type.example }}</td>
+                                {% endif %}
+                                <td class="px-3 py-2 text-gray-600">{{ type.use }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if category.warning %}
+                <div class="mt-2 bg-red-50 border border-red-200 rounded p-2 text-sm text-red-700">
+                    {{ category.warning }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- String Types -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-green-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-green-800">String Data Types</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            {% for type in viz_data.string_types %}
+            <div class="border rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <code class="font-bold text-green-600">{{ type.name }}</code>
+                    <span class="text-xs bg-gray-100 px-2 py-1 rounded">{{ type.max_length }}</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">{{ type.description }}</p>
+                <div class="text-xs text-gray-500 mb-2">Storage: {{ type.storage }}</div>
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded block mb-2">{{ type.example }}</code>
+
+                {% if type.pros %}
+                <div class="flex flex-wrap gap-1">
+                    {% for pro in type.pros %}
+                    <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">+ {{ pro }}</span>
+                    {% endfor %}
+                    {% for con in type.cons %}
+                    <span class="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">- {{ con }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Date/Time Types -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-purple-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-purple-800">Date & Time Types</h4>
+        </div>
+        <div class="p-4">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Type</th>
+                            <th class="px-3 py-2 text-left">Format</th>
+                            <th class="px-3 py-2 text-left">Range</th>
+                            <th class="px-3 py-2 text-left">Example</th>
+                            <th class="px-3 py-2 text-left">Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for type in viz_data.date_types %}
+                        <tr class="border-b {% if type.name == 'TIMESTAMP' %}bg-purple-50{% endif %}">
+                            <td class="px-3 py-2 font-mono text-purple-600">{{ type.name }}</td>
+                            <td class="px-3 py-2 font-mono text-xs">{{ type.format }}</td>
+                            <td class="px-3 py-2 text-xs">{{ type.range }}</td>
+                            <td class="px-3 py-2 font-mono text-xs">{{ type.example }}</td>
+                            <td class="px-3 py-2 text-gray-600">{{ type.use }}</td>
+                        </tr>
+                        {% if type.special %}
+                        <tr class="bg-purple-50">
+                            <td colspan="5" class="px-3 py-2 text-xs text-purple-700">
+                                {{ type.special }}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Other Types -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Other Data Types</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            {% for type in viz_data.other_types %}
+            <div class="border rounded-lg p-3">
+                <code class="font-bold text-gray-700">{{ type.name }}</code>
+                <p class="text-sm text-gray-600 mt-1">{{ type.description }}</p>
+                {% if type.example %}
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded block mt-2">{{ type.example }}</code>
+                {% endif %}
+                {% if type.note %}
+                <p class="text-xs text-amber-600 mt-2">Note: {{ type.note }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Type Conversion -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-orange-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-orange-800">{{ viz_data.type_conversion.title }}</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            <!-- Implicit -->
+            <div>
+                <h5 class="font-medium mb-2">Implicit Conversion</h5>
+                <p class="text-sm text-gray-600 mb-3">{{ viz_data.type_conversion.implicit.description }}</p>
+
+                <div class="space-y-2">
+                    {% for ex in viz_data.type_conversion.implicit.examples %}
+                    <div class="bg-gray-50 rounded p-2 text-sm">
+                        <code>{{ ex.expression }}</code>
+                        <span class="text-gray-500 mx-2">=</span>
+                        <code class="text-green-600">{{ ex.result }}</code>
+                        <span class="text-xs text-gray-400 ml-2">({{ ex.note }})</span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-3 bg-amber-50 border border-amber-200 rounded p-2 text-sm text-amber-700">
+                    {{ viz_data.type_conversion.implicit.warning }}
+                </div>
+            </div>
+
+            <!-- Explicit -->
+            <div>
+                <h5 class="font-medium mb-2">Explicit Conversion</h5>
+                <p class="text-sm text-gray-600 mb-3">{{ viz_data.type_conversion.explicit.description }}</p>
+
+                <div class="space-y-2">
+                    {% for ex in viz_data.type_conversion.explicit.examples %}
+                    <div class="bg-gray-50 rounded p-2">
+                        <code class="text-sm text-blue-600">{{ ex.sql }}</code>
+                        <div class="text-xs text-gray-500">{{ ex.purpose }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Best Practices -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-indigo-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-indigo-800">Best Practices</h4>
+        </div>
+        <div class="p-4 grid md:grid-cols-2 gap-4">
+            {% for bp in viz_data.best_practices %}
+            <div class="border rounded-lg p-3">
+                <h5 class="font-medium text-indigo-700 mb-1">{{ bp.practice }}</h5>
+                <p class="text-sm text-gray-600 mb-2">{{ bp.why }}</p>
+                <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{ bp.example }}</code>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Learning Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/data-types-nulls/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/data-types-nulls/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-rose-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Alpine.js for quiz interactivity -->
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

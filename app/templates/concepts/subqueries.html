@@ -1,0 +1,144 @@
+{% if viz_data.error %}
+<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+    <p class="text-red-700">{{ viz_data.error }}</p>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Detected type -->
+    {% if viz_data.detected_type %}
+    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+        <span class="text-sm text-indigo-600">Detected Subquery Type:</span>
+        <span class="ml-2 text-xl font-bold text-indigo-700">
+            {% if viz_data.detected_type == 'in_subquery' %}Column Subquery (IN)
+            {% elif viz_data.detected_type == 'exists' %}EXISTS Subquery
+            {% elif viz_data.detected_type == 'scalar' %}Scalar Subquery
+            {% elif viz_data.detected_type == 'derived' %}Derived Table
+            {% else %}{{ viz_data.detected_type }}{% endif %}
+        </span>
+        {% if viz_data.execution_example.is_correlated %}
+        <span class="ml-2 px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">⚠️ Correlated</span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Subquery types reference -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for type in viz_data.subquery_types %}
+        <div class="bg-white border rounded-lg p-4 {% if viz_data.detected_type and type.name.lower().replace(' ', '_').replace('(', '').replace(')', '') in viz_data.detected_type %}ring-2 ring-indigo-400{% endif %}">
+            <div class="flex items-center mb-2">
+                <span class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-lg mr-2">{{ type.icon }}</span>
+                <h4 class="font-semibold text-sm">{{ type.name }}</h4>
+            </div>
+            <p class="text-xs text-gray-600 mb-2">{{ type.description }}</p>
+            <div class="bg-gray-50 rounded p-2 mb-2">
+                <code class="text-xs break-all">{{ type.syntax[:80] }}{% if type.syntax|length > 80 %}...{% endif %}</code>
+            </div>
+            <p class="text-xs text-indigo-600">💡 {{ type.key_point }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Execution trace -->
+    {% if viz_data.detected_type %}
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">Execution Trace</h4>
+        </div>
+        <div class="p-4">
+            <div class="space-y-2 mb-4">
+                <div class="text-sm">
+                    <span class="text-gray-500">Outer:</span>
+                    <code class="ml-2 bg-blue-50 px-2 py-1 rounded">{{ viz_data.execution_example.outer_query }}</code>
+                </div>
+                <div class="text-sm">
+                    <span class="text-gray-500">Inner:</span>
+                    <code class="ml-2 bg-green-50 px-2 py-1 rounded">{{ viz_data.execution_example.inner_query }}</code>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                {% for step in viz_data.execution_example.steps %}
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-sm">
+                        {{ step.step }}
+                    </div>
+                    <div class="ml-3 flex-grow">
+                        <div class="font-medium text-sm">{{ step.action }}</div>
+                        <div class="text-xs text-gray-500">{{ step.result }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if viz_data.execution_example.is_correlated %}
+            <div class="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <div class="flex items-start">
+                    <span class="text-orange-500 text-xl mr-2">⚠️</span>
+                    <div>
+                        <h5 class="font-medium text-orange-800">Correlated Subquery Warning</h5>
+                        <p class="text-sm text-orange-700">This subquery executes once per row in the outer query. For large tables, this can be very slow!</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Performance tips -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-yellow-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-yellow-800">Performance Optimization Tips</h4>
+        </div>
+        <div class="p-4 space-y-4">
+            {% for tip in viz_data.performance_tips %}
+            <div class="border-b pb-4 last:border-b-0 last:pb-0">
+                <h5 class="font-medium text-sm mb-2">{{ tip.pattern }}</h5>
+                <p class="text-xs text-red-600 mb-2">⚠️ {{ tip.issue }}</p>
+                <p class="text-xs text-green-600 mb-2">💡 {{ tip.alternative }}</p>
+
+                <div class="grid md:grid-cols-2 gap-2 text-xs">
+                    <div class="bg-red-50 p-2 rounded">
+                        <span class="text-red-500">Before:</span>
+                        <code class="block mt-1 text-red-700">{{ tip.example_before[:60] }}...</code>
+                    </div>
+                    <div class="bg-green-50 p-2 rounded">
+                        <span class="text-green-500">After:</span>
+                        <code class="block mt-1 text-green-700">{{ tip.example_after[:60] }}...</code>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/subqueries/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>◀ Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/subqueries/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next ▶</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-indigo-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

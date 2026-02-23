@@ -1,0 +1,583 @@
+<div class="space-y-6" x-data="innodbDemo()">
+    <!-- Hero: Overview -->
+    <div class="bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg p-6">
+        <h3 class="text-2xl font-bold mb-2">{{ viz_data.overview.title }}</h3>
+        <p class="text-orange-100 mb-4">{{ viz_data.overview.description }}</p>
+
+        <!-- Key Features -->
+        <div class="flex flex-wrap gap-2">
+            {% for feature in viz_data.overview.key_features %}
+            <span class="bg-white/20 px-3 py-1 rounded-full text-sm">{{ feature }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Architecture Layers -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">InnoDB Architecture Layers</h4>
+        </div>
+        <div class="p-4">
+            <div class="space-y-4">
+                {% for layer in viz_data.overview.architecture_layers %}
+                <div class="border rounded-lg overflow-hidden">
+                    <div class="px-4 py-2 font-medium {% if layer.color == 'blue' %}bg-blue-100 text-blue-800{% elif layer.color == 'green' %}bg-green-100 text-green-800{% else %}bg-orange-100 text-orange-800{% endif %}">
+                        {{ layer.name }}
+                    </div>
+                    <div class="p-3 flex flex-wrap gap-2">
+                        {% for component in layer.components %}
+                        <span class="{% if layer.color == 'blue' %}bg-blue-50 text-blue-700{% elif layer.color == 'green' %}bg-green-50 text-green-700{% else %}bg-orange-50 text-orange-700{% endif %} px-3 py-1 rounded text-sm">
+                            {{ component }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="mt-4 bg-gray-100 rounded-lg p-4">
+                <div class="text-sm text-gray-600 font-medium mb-1">Data Flow:</div>
+                <div class="font-mono text-sm">{{ viz_data.overview.data_flow }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buffer Pool -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-blue-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-blue-800">{{ viz_data.buffer_pool.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.buffer_pool.description }}</p>
+
+            <!-- Why Important -->
+            <div class="bg-blue-100 rounded-lg p-4 mb-4">
+                <span class="font-bold text-blue-800">Why?</span>
+                <span class="text-blue-700">{{ viz_data.buffer_pool.why_important }}</span>
+            </div>
+
+            <!-- Page Types -->
+            <div class="mb-4">
+                <h5 class="font-medium mb-2">Page Types (16KB each)</h5>
+                <div class="flex flex-wrap gap-2">
+                    {% for type in viz_data.buffer_pool.structure.pages.types %}
+                    <span class="bg-gray-100 px-3 py-1 rounded text-sm">{{ type }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- LRU Animation -->
+            <div class="mb-4">
+                <h5 class="font-medium mb-2">{{ viz_data.buffer_pool.lru_algorithm.title }}</h5>
+                <p class="text-sm text-gray-600 mb-3">{{ viz_data.buffer_pool.lru_algorithm.description }}</p>
+
+                <div class="flex items-center gap-4 mb-4">
+                    <button @click="animateLRU()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        Animate Page Access
+                    </button>
+                    <button @click="resetLRU()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                        Reset
+                    </button>
+                </div>
+
+                <div class="border rounded-lg overflow-hidden">
+                    <!-- Young sublist -->
+                    <div class="bg-green-100 px-4 py-2 border-b">
+                        <span class="font-medium text-green-800">Young Sublist (Hot Data)</span>
+                    </div>
+                    <div class="p-3 flex gap-2 min-h-[60px] bg-green-50">
+                        <template x-for="page in youngPages" :key="page.id">
+                            <div class="border rounded px-3 py-2 text-xs transition-all duration-300"
+                                 :class="page.dirty ? 'bg-red-100 border-red-300' : 'bg-white border-gray-300'">
+                                <div class="font-mono" x-text="'Page ' + page.id"></div>
+                                <div class="text-gray-500" x-text="page.table"></div>
+                                <div x-show="page.dirty" class="text-red-500 text-xs">dirty</div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Midpoint indicator -->
+                    <div class="bg-yellow-100 px-4 py-1 border-y text-center text-sm text-yellow-800">
+                        ↑ Midpoint (3/8 from head) - New pages enter here ↓
+                    </div>
+
+                    <!-- Old sublist -->
+                    <div class="bg-gray-100 px-4 py-2 border-b">
+                        <span class="font-medium text-gray-700">Old Sublist (Cold Data)</span>
+                    </div>
+                    <div class="p-3 flex gap-2 min-h-[60px] bg-gray-50">
+                        <template x-for="page in oldPages" :key="page.id">
+                            <div class="border rounded px-3 py-2 text-xs transition-all duration-300"
+                                 :class="page.dirty ? 'bg-red-100 border-red-300' : 'bg-white border-gray-300'">
+                                <div class="font-mono" x-text="'Page ' + page.id"></div>
+                                <div class="text-gray-500" x-text="page.table"></div>
+                                <div x-show="page.dirty" class="text-red-500 text-xs">dirty</div>
+                            </div>
+                        </template>
+                        <div class="text-gray-400 text-sm flex items-center">→ Evicted</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sizing Recommendation -->
+            <div class="bg-gray-100 rounded-lg p-4">
+                <h5 class="font-medium mb-2">Buffer Pool Sizing</h5>
+                <div class="text-sm space-y-1">
+                    <div><span class="font-medium">Variable:</span> <code class="bg-white px-2 py-0.5 rounded">{{ viz_data.buffer_pool.sizing.variable }}</code></div>
+                    <div><span class="font-medium">Recommendation:</span> {{ viz_data.buffer_pool.sizing.recommendation }}</div>
+                    <div><span class="font-medium">Target Hit Rate:</span> {{ viz_data.buffer_pool.sizing.target_hit_rate }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redo Log (WAL) -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-green-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-green-800">{{ viz_data.redo_log.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.redo_log.description }}</p>
+
+            <!-- Why WAL -->
+            <div class="bg-green-100 rounded-lg p-4 mb-4">
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div>
+                        <span class="font-bold text-red-700">Problem:</span>
+                        <div class="text-sm text-gray-700">{{ viz_data.redo_log.why_wal.problem }}</div>
+                    </div>
+                    <div>
+                        <span class="font-bold text-blue-700">Solution:</span>
+                        <div class="text-sm text-gray-700">{{ viz_data.redo_log.why_wal.solution }}</div>
+                    </div>
+                    <div>
+                        <span class="font-bold text-green-700">Benefit:</span>
+                        <div class="text-sm text-gray-700">{{ viz_data.redo_log.why_wal.benefit }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Write Flow Animation -->
+            <div class="mb-4">
+                <h5 class="font-medium mb-2">Write Flow</h5>
+                <div class="flex items-center gap-2 mb-3">
+                    <button @click="animateRedoLog()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        Animate Write
+                    </button>
+                    <button @click="resetRedoLog()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                        Reset
+                    </button>
+                </div>
+
+                <div class="space-y-2">
+                    {% for step in viz_data.redo_log.write_flow %}
+                    <div class="flex items-center gap-4 p-3 rounded transition-colors duration-500"
+                         :class="redoLogStep >= {{ step.step }} ? 'bg-green-100' : 'bg-gray-50'">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm"
+                             :class="redoLogStep >= {{ step.step }} ? 'bg-green-500 text-white' : 'bg-gray-300'">
+                            {{ step.step }}
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium">{{ step.action }}</div>
+                            <div class="text-sm text-gray-500">{{ step.location }}{% if step.timing %} - {{ step.timing }}{% endif %}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Durability Settings -->
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-100 px-4 py-2 font-medium">{{ viz_data.redo_log.commit_durability.title }}</div>
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Value</th>
+                            <th class="px-3 py-2 text-left">Behavior</th>
+                            <th class="px-3 py-2 text-left">Durability</th>
+                            <th class="px-3 py-2 text-left">Performance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for opt in viz_data.redo_log.commit_durability.options %}
+                        <tr class="border-t {% if opt.value == '1' %}bg-green-50{% endif %}">
+                            <td class="px-3 py-2 font-mono">{{ opt.value }}</td>
+                            <td class="px-3 py-2">{{ opt.behavior }}</td>
+                            <td class="px-3 py-2">{{ opt.durability }}</td>
+                            <td class="px-3 py-2">{{ opt.performance }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <div class="p-3 bg-yellow-50 text-sm text-yellow-800">
+                    {{ viz_data.redo_log.commit_durability.recommendation }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Undo Log -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-purple-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-purple-800">{{ viz_data.undo_log.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.undo_log.description }}</p>
+
+            <!-- Two Purposes -->
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <div class="border rounded-lg p-4 bg-red-50">
+                    <h5 class="font-bold text-red-700 mb-2">Rollback</h5>
+                    <p class="text-sm text-gray-700">{{ viz_data.undo_log.two_purposes.rollback.description }}</p>
+                    <div class="mt-2 bg-white rounded p-2 text-xs font-mono text-gray-600">
+                        {{ viz_data.undo_log.two_purposes.rollback.example }}
+                    </div>
+                </div>
+                <div class="border rounded-lg p-4 bg-blue-50">
+                    <h5 class="font-bold text-blue-700 mb-2">MVCC (Multi-Version Concurrency)</h5>
+                    <p class="text-sm text-gray-700">{{ viz_data.undo_log.two_purposes.mvcc.description }}</p>
+                    <div class="mt-2 bg-white rounded p-2 text-xs font-mono text-gray-600">
+                        {{ viz_data.undo_log.two_purposes.mvcc.example }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Version Chain Demo -->
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-purple-100 px-4 py-2 font-medium">Version Chain Visualization</div>
+                <div class="p-4">
+                    <div class="flex items-center gap-4 overflow-x-auto pb-2">
+                        {% for version in viz_data.undo_log.demo_versions %}
+                        <div class="flex-shrink-0 border rounded-lg p-3 {% if version.version == 'Current' %}bg-purple-100 border-purple-300{% else %}bg-gray-50{% endif %}">
+                            <div class="text-xs text-gray-500">{{ version.version }}</div>
+                            <div class="font-mono text-lg">salary: {{ version.salary }}</div>
+                            <div class="text-xs text-gray-400">trx_id: {{ version.trx_id }}</div>
+                            <div class="text-xs text-purple-600">{{ version.note }}</div>
+                        </div>
+                        {% if not loop.last %}
+                        <div class="text-gray-400 text-2xl">→</div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    <p class="text-sm text-gray-600 mt-3">
+                        Each row points to its previous version in the undo log. Readers follow the chain to find the right version for their transaction.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Buffer -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-yellow-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-yellow-800">{{ viz_data.change_buffer.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.change_buffer.description }}</p>
+
+            <!-- Problem/Solution -->
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h5 class="font-bold text-red-700 mb-2">Problem</h5>
+                    <p class="text-sm text-gray-700">{{ viz_data.change_buffer.problem.description }}</p>
+                    <div class="mt-2 text-xs text-red-600">{{ viz_data.change_buffer.problem.example }}</div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <h5 class="font-bold text-green-700 mb-2">Solution</h5>
+                    <p class="text-sm text-gray-700">{{ viz_data.change_buffer.solution.description }}</p>
+                    <ul class="mt-2 text-xs text-green-700 space-y-1">
+                        {% for when in viz_data.change_buffer.solution.when_merge %}
+                        <li>{{ when }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- What's Buffered -->
+            <div class="border rounded-lg overflow-hidden">
+                <div class="bg-gray-100 px-4 py-2 font-medium">What Can Be Buffered?</div>
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left">Operation</th>
+                            <th class="px-3 py-2 text-center">Buffered?</th>
+                            <th class="px-3 py-2 text-left">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in viz_data.change_buffer.what_is_buffered %}
+                        <tr class="border-t">
+                            <td class="px-3 py-2 font-mono">{{ item.operation }}</td>
+                            <td class="px-3 py-2 text-center">
+                                {% if item.buffered == true %}
+                                <span class="text-green-600 text-lg">&#10003;</span>
+                                {% elif item.buffered == false %}
+                                <span class="text-red-600 text-lg">&#10007;</span>
+                                {% else %}
+                                <span class="text-yellow-600">~</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-2 text-gray-500">{{ item.reason | default('') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Doublewrite Buffer -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-red-50 px-4 py-3 border-b">
+            <h4 class="font-semibold text-red-800">{{ viz_data.doublewrite.title }}</h4>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.doublewrite.description }}</p>
+
+            <!-- Torn Page Problem -->
+            <div class="bg-red-100 rounded-lg p-4 mb-4">
+                <h5 class="font-bold text-red-700 mb-2">The Torn Page Problem</h5>
+                <p class="text-sm text-gray-700">{{ viz_data.doublewrite.problem.description }}</p>
+                <p class="text-sm text-gray-700 mt-1">{{ viz_data.doublewrite.problem.scenario }}</p>
+                <div class="mt-2 font-mono text-xs bg-white rounded p-2 text-red-600">
+                    {{ viz_data.doublewrite.problem.torn_page }}
+                </div>
+            </div>
+
+            <!-- Write Flow -->
+            <div class="mb-4">
+                <h5 class="font-medium mb-2">Doublewrite Flow</h5>
+                <div class="space-y-2">
+                    {% for step in viz_data.doublewrite.write_flow %}
+                    <div class="flex items-start gap-4 p-3 bg-gray-50 rounded">
+                        <div class="w-8 h-8 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
+                            {{ step.step }}
+                        </div>
+                        <div>
+                            <div class="font-medium">{{ step.action }}</div>
+                            {% if step.location %}
+                            <div class="text-sm text-gray-500">{{ step.location }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Performance Note -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h5 class="font-bold text-yellow-700 mb-2">Performance Consideration</h5>
+                <p class="text-sm text-gray-700">{{ viz_data.doublewrite.performance.overhead }}</p>
+                <p class="text-sm text-gray-700 mt-1">{{ viz_data.doublewrite.performance.when_disable }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Crash Recovery Timeline -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-indigo-50 px-4 py-3 border-b flex items-center justify-between">
+            <h4 class="font-semibold text-indigo-800">{{ viz_data.crash_recovery.title }}</h4>
+            <div class="flex gap-2">
+                <button @click="animateCrashRecovery()" class="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600">
+                    Play Recovery Story
+                </button>
+                <button @click="resetCrashRecovery()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+                    Reset
+                </button>
+            </div>
+        </div>
+        <div class="p-4">
+            <p class="text-gray-600 mb-4">{{ viz_data.crash_recovery.description }}</p>
+
+            <!-- Timeline -->
+            <div class="relative">
+                <div class="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-300"></div>
+
+                {% for event in viz_data.crash_recovery.timeline.events %}
+                <div class="relative pl-12 pb-6 transition-opacity duration-500"
+                     :class="crashRecoveryStep >= {{ loop.index }} ? 'opacity-100' : 'opacity-30'">
+                    <div class="absolute left-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold
+                        {% if event.time == 'T3' %}bg-red-500 text-white{% elif loop.index > 3 %}bg-indigo-500 text-white{% else %}bg-blue-500 text-white{% endif %}"
+                        :class="crashRecoveryStep >= {{ loop.index }} ? '' : 'bg-gray-300'">
+                        {{ event.time }}
+                    </div>
+                    <div class="bg-gray-50 rounded-lg p-4 {% if event.time == 'T3' %}border-2 border-red-500{% endif %}">
+                        <div class="font-medium {% if event.time == 'T3' %}text-red-700{% endif %}">{{ event.event }}</div>
+                        {% if event.redo %}
+                        <div class="text-sm text-green-600 mt-1">Redo: {{ event.redo }}</div>
+                        {% endif %}
+                        {% if event.data %}
+                        <div class="text-sm text-blue-600 mt-1">Data: {{ event.data }}</div>
+                        {% endif %}
+                        {% if event.state %}
+                        <div class="text-sm text-orange-600 mt-1">{{ event.state }}</div>
+                        {% endif %}
+                        {% if event.action %}
+                        <div class="text-sm text-purple-600 mt-1">{{ event.action }}</div>
+                        {% endif %}
+                        {% if event.result %}
+                        <div class="text-sm text-green-700 font-medium mt-1">{{ event.result }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Phases Explanation -->
+            <div class="grid md:grid-cols-2 gap-4 mt-6">
+                <div class="border rounded-lg p-4 bg-green-50">
+                    <h5 class="font-bold text-green-700 mb-2">{{ viz_data.crash_recovery.phases.redo.name }}</h5>
+                    <p class="text-sm text-gray-700">{{ viz_data.crash_recovery.phases.redo.description }}</p>
+                    <p class="text-sm text-green-600 mt-2">{{ viz_data.crash_recovery.phases.redo.purpose }}</p>
+                </div>
+                <div class="border rounded-lg p-4 bg-red-50">
+                    <h5 class="font-bold text-red-700 mb-2">{{ viz_data.crash_recovery.phases.undo.name }}</h5>
+                    <p class="text-sm text-gray-700">{{ viz_data.crash_recovery.phases.undo.description }}</p>
+                    <p class="text-sm text-red-600 mt-2">{{ viz_data.crash_recovery.phases.undo.purpose }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Tuning -->
+    <div class="bg-white border rounded-lg overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h4 class="font-semibold">InnoDB Performance Settings</h4>
+        </div>
+        <div class="divide-y">
+            {% for setting in viz_data.performance_tuning %}
+            <div class="p-4">
+                <div class="flex items-start gap-4">
+                    <code class="bg-gray-100 px-3 py-1 rounded text-sm flex-shrink-0">{{ setting.setting }}</code>
+                    <div class="flex-1">
+                        <div class="text-sm text-gray-700">{{ setting.description }}</div>
+                        <div class="text-sm text-green-700 mt-1">
+                            <span class="font-medium">Recommendation:</span> {{ setting.recommendation }}
+                        </div>
+                        {% if setting.tradeoff %}
+                        <div class="text-sm text-orange-600 mt-1">
+                            <span class="font-medium">Tradeoff:</span> {{ setting.tradeoff }}
+                        </div>
+                        {% endif %}
+                        {% if setting.default %}
+                        <div class="text-sm text-gray-500 mt-1">
+                            <span class="font-medium">Default:</span> {{ setting.default }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Learning Steps</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/innodb-internals/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>Prev</button>
+                <span class="px-3 py-1 bg-white rounded border">{{ current_step + 1 }} / {{ steps | length }}</span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/innodb-internals/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>Next</button>
+            </div>
+        </div>
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-orange-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function innodbDemo() {
+    return {
+        // Buffer Pool LRU demo
+        youngPages: [
+            {id: 1, table: 'employees', dirty: false},
+            {id: 2, table: 'employees', dirty: true},
+            {id: 3, table: 'orders', dirty: false}
+        ],
+        oldPages: [
+            {id: 4, table: 'departments', dirty: false},
+            {id: 5, table: 'products', dirty: true},
+            {id: 6, table: 'orders', dirty: false}
+        ],
+
+        // Redo log animation
+        redoLogStep: 0,
+
+        // Crash recovery animation
+        crashRecoveryStep: 0,
+
+        animateLRU() {
+            // Simulate accessing page 5 (moves from old to young)
+            const pageIdx = this.oldPages.findIndex(p => p.id === 5);
+            if (pageIdx !== -1) {
+                const page = this.oldPages.splice(pageIdx, 1)[0];
+                this.youngPages.unshift(page);
+                // Move last young to old
+                if (this.youngPages.length > 4) {
+                    const evicted = this.youngPages.pop();
+                    this.oldPages.unshift(evicted);
+                }
+            }
+        },
+
+        resetLRU() {
+            this.youngPages = [
+                {id: 1, table: 'employees', dirty: false},
+                {id: 2, table: 'employees', dirty: true},
+                {id: 3, table: 'orders', dirty: false}
+            ];
+            this.oldPages = [
+                {id: 4, table: 'departments', dirty: false},
+                {id: 5, table: 'products', dirty: true},
+                {id: 6, table: 'orders', dirty: false}
+            ];
+        },
+
+        animateRedoLog() {
+            this.redoLogStep = 0;
+            let step = 0;
+            const interval = setInterval(() => {
+                step++;
+                this.redoLogStep = step;
+                if (step >= 4) {
+                    clearInterval(interval);
+                }
+            }, 800);
+        },
+
+        resetRedoLog() {
+            this.redoLogStep = 0;
+        },
+
+        animateCrashRecovery() {
+            this.crashRecoveryStep = 0;
+            let step = 0;
+            const interval = setInterval(() => {
+                step++;
+                this.crashRecoveryStep = step;
+                if (step >= 7) {
+                    clearInterval(interval);
+                }
+            }, 1000);
+        },
+
+        resetCrashRecovery() {
+            this.crashRecoveryStep = 0;
+        }
+    }
+}
+</script>
+
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}

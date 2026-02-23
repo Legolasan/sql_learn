@@ -1,0 +1,169 @@
+{% if viz_data.error %}
+<div class="bg-red-50 border border-red-200 rounded-lg p-4">
+    <p class="text-red-700">{{ viz_data.error }}</p>
+</div>
+{% else %}
+
+<div class="space-y-6">
+    <!-- Order comparison -->
+    <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-gray-50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-600 mb-3">How You Write It</h4>
+            <div class="flex flex-wrap items-center gap-2">
+                {% for clause in viz_data.written_order %}
+                <span class="px-3 py-1 bg-white border rounded-full text-sm">{{ clause }}</span>
+                {% if not loop.last %}
+                <span class="text-gray-400">→</span>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <div class="bg-indigo-50 rounded-lg p-4">
+            <h4 class="font-semibold text-indigo-600 mb-3">How MySQL Runs It</h4>
+            <div class="flex flex-wrap items-center gap-2">
+                {% for clause in viz_data.execution_order %}
+                <span class="px-3 py-1 bg-indigo-100 border border-indigo-200 rounded-full text-sm text-indigo-700">{{ clause }}</span>
+                {% if not loop.last %}
+                <span class="text-indigo-400">→</span>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Pipeline visualization -->
+    <div class="bg-white border rounded-lg p-6">
+        <h3 class="font-semibold mb-4">Execution Pipeline</h3>
+
+        <div class="space-y-4">
+            {% for stage in viz_data.stages %}
+            <div class="relative">
+                <!-- Connector line -->
+                {% if not loop.first %}
+                <div class="absolute left-6 -top-4 w-0.5 h-4 bg-gray-300"></div>
+                {% endif %}
+
+                <div class="flex items-start space-x-4 {% if not stage.is_active %}opacity-40{% endif %}">
+                    <!-- Stage indicator -->
+                    <div class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center
+                        {% if stage.is_active %}
+                            {% if stage.name == 'FROM' %}bg-blue-100 text-blue-600
+                            {% elif stage.name == 'WHERE' %}bg-red-100 text-red-600
+                            {% elif stage.name == 'GROUP BY' %}bg-purple-100 text-purple-600
+                            {% elif stage.name == 'HAVING' %}bg-orange-100 text-orange-600
+                            {% elif stage.name == 'SELECT' %}bg-green-100 text-green-600
+                            {% elif stage.name == 'ORDER BY' %}bg-yellow-100 text-yellow-600
+                            {% elif stage.name == 'LIMIT' %}bg-gray-100 text-gray-600
+                            {% else %}bg-gray-100 text-gray-600{% endif %}
+                        {% else %}bg-gray-100 text-gray-400{% endif %}
+                        text-sm font-bold">
+                        {{ loop.index }}
+                    </div>
+
+                    <!-- Stage content -->
+                    <div class="flex-grow">
+                        <div class="flex items-center space-x-3">
+                            <h4 class="font-semibold {% if stage.is_active %}text-gray-800{% else %}text-gray-400{% endif %}">
+                                {{ stage.name }}
+                            </h4>
+                            {% if stage.is_active %}
+                            <span class="text-xs px-2 py-0.5 bg-gray-100 rounded-full text-gray-500">
+                                {{ stage.output_rows }} rows
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <p class="text-sm text-gray-600 mt-1">{{ stage.description }}</p>
+
+                        {% if stage.is_active and stage.sample_data %}
+                        <div class="mt-2 overflow-x-auto">
+                            <table class="text-xs border rounded">
+                                <tbody>
+                                    {% for row in stage.sample_data[:3] %}
+                                    <tr class="border-b last:border-b-0">
+                                        {% for key, val in row.items() %}
+                                        <td class="px-2 py-1 bg-gray-50 border-r">
+                                            <span class="text-gray-400">{{ key }}:</span>
+                                            <span class="font-mono">{{ val }}</span>
+                                        </td>
+                                        {% endfor %}
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                            {% if stage.sample_data | length > 3 %}
+                            <span class="text-xs text-gray-400">...and {{ stage.output_rows - 3 }} more</span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Row count indicator -->
+                    {% if stage.is_active and stage.input_rows > 0 %}
+                    <div class="flex-shrink-0 text-right">
+                        <div class="text-xs text-gray-400">
+                            {{ stage.input_rows }} → {{ stage.output_rows }}
+                        </div>
+                        {% if stage.output_rows < stage.input_rows %}
+                        <div class="text-xs text-red-500">
+                            -{{ stage.input_rows - stage.output_rows }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Step controls -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h4 class="font-semibold">Step Through</h4>
+            <div class="flex items-center space-x-2">
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/exec-order/step/{{ current_step - 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step <= 0 %}disabled{% endif %}>
+                    ◀ Prev
+                </button>
+                <span class="px-3 py-1 bg-white rounded border">
+                    Step {{ current_step + 1 }} / {{ steps | length }}
+                </span>
+                <button class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        hx-get="/concept/exec-order/step/{{ current_step + 1 }}?query={{ query | urlencode }}"
+                        hx-target="#visualization-area"
+                        {% if current_step >= steps | length - 1 %}disabled{% endif %}>
+                    Next ▶
+                </button>
+            </div>
+        </div>
+
+        {% if steps %}
+        <div class="bg-white rounded border p-4">
+            <div class="font-medium text-indigo-600">{{ steps[current_step].title }}</div>
+            <p class="text-gray-600 mt-1">{{ steps[current_step].description }}</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Common misconception callout -->
+    {% if viz_data.misconception %}
+    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <h4 class="font-semibold text-amber-800 flex items-center">
+            <span class="mr-2">💡</span>
+            {{ viz_data.misconception.title }}
+        </h4>
+        <p class="text-amber-700 mt-2">{{ viz_data.misconception.explanation }}</p>
+        <p class="text-sm text-amber-600 mt-2 font-mono bg-amber-100 px-2 py-1 rounded inline-block">
+            {{ viz_data.misconception.example }}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+{# Query Results and Error Display #}
+{% include 'components/error_display.html' %}
+{% include 'components/results_table.html' %}
