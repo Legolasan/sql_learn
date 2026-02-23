@@ -1,0 +1,372 @@
+{# HTMX partial for playground query results #}
+<div class="bg-white border rounded-lg shadow-sm" x-data="{ activeTab: 'results' }">
+    <!-- Error Display -->
+    {% if analysis.error %}
+    <div class="p-4 bg-red-50 border-b border-red-200">
+        <div class="flex items-start">
+            <svg class="w-5 h-5 text-red-500 mt-0.5 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+                <p class="text-red-800 font-medium">{{ analysis.error.message }}</p>
+                {% if analysis.error.suggestion %}
+                <p class="text-red-600 text-sm mt-1">{{ analysis.error.suggestion }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tab Navigation -->
+    <div class="bg-gray-50 border-b px-4">
+        <nav class="flex space-x-1 -mb-px">
+            <button @click="activeTab = 'results'"
+                    :class="activeTab === 'results' ? 'border-indigo-500 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                </svg>
+                Results
+                {% if analysis.result %}
+                <span class="ml-1.5 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs">{{ analysis.result.row_count }}</span>
+                {% endif %}
+            </button>
+            <button @click="activeTab = 'insights'"
+                    :class="activeTab === 'insights' ? 'border-indigo-500 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                Insights
+                {% if analysis.issues %}
+                <span class="ml-1.5 px-2 py-0.5 rounded-full text-xs
+                    {% if analysis.overall_severity == 'critical' %}bg-red-100 text-red-700
+                    {% elif analysis.overall_severity == 'warning' %}bg-yellow-100 text-yellow-700
+                    {% else %}bg-green-100 text-green-700{% endif %}">
+                    {{ analysis.issues|length }}
+                </span>
+                {% endif %}
+            </button>
+            <button @click="activeTab = 'explain'"
+                    :class="activeTab === 'explain' ? 'border-indigo-500 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                EXPLAIN
+                {% if analysis.explain_rows %}
+                <span class="ml-1.5 px-2 py-0.5 rounded-full text-xs
+                    {% if analysis.access_rating == 'bad' %}bg-red-100 text-red-700
+                    {% elif analysis.access_rating == 'caution' %}bg-yellow-100 text-yellow-700
+                    {% else %}bg-green-100 text-green-700{% endif %}">
+                    {{ analysis.access_rating }}
+                </span>
+                {% endif %}
+            </button>
+            <button @click="activeTab = 'optimize'"
+                    :class="activeTab === 'optimize' ? 'border-indigo-500 text-indigo-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="px-4 py-3 text-sm font-medium border-b-2 transition-colors flex items-center">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                Optimize
+            </button>
+        </nav>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="p-4">
+        <!-- Results Tab -->
+        <div x-show="activeTab === 'results'" x-transition>
+            {% if analysis.result %}
+            <div class="mb-3 flex items-center justify-between text-sm text-gray-500">
+                <span>{{ analysis.result.row_count }} row(s) returned</span>
+                <span>{{ analysis.result.execution_time_ms }}ms</span>
+            </div>
+            {% if analysis.result.rows %}
+            <div class="overflow-x-auto border rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            {% for col in analysis.result.columns %}
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                {{ col }}
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for row in analysis.result.rows[:50] %}
+                        <tr class="hover:bg-gray-50">
+                            {% for col in analysis.result.columns %}
+                            <td class="px-4 py-2 text-sm text-gray-900 whitespace-nowrap">
+                                {% if row[col] is none %}
+                                <span class="text-gray-400 italic">NULL</span>
+                                {% else %}
+                                {{ row[col] }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if analysis.result.row_count > 50 %}
+            <p class="mt-2 text-sm text-gray-500 text-center">Showing first 50 of {{ analysis.result.row_count }} rows</p>
+            {% endif %}
+            {% else %}
+            <p class="text-gray-500 text-center py-8">Query returned no rows</p>
+            {% endif %}
+            {% else %}
+            <p class="text-gray-500 text-center py-8">No results available</p>
+            {% endif %}
+        </div>
+
+        <!-- Insights Tab -->
+        <div x-show="activeTab === 'insights'" x-transition>
+            {% if analysis.issues %}
+            <div class="space-y-3">
+                {% for issue in analysis.issues %}
+                <div class="border rounded-lg p-4
+                    {% if issue.severity == 'error' %}border-red-200 bg-red-50
+                    {% elif issue.severity == 'warning' %}border-yellow-200 bg-yellow-50
+                    {% else %}border-blue-200 bg-blue-50{% endif %}">
+                    <div class="flex items-start">
+                        {% if issue.severity == 'error' %}
+                        <span class="flex-shrink-0 w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </span>
+                        {% elif issue.severity == 'warning' %}
+                        <span class="flex-shrink-0 w-6 h-6 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </span>
+                        {% else %}
+                        <span class="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </span>
+                        {% endif %}
+                        <div class="flex-1">
+                            <h4 class="font-medium
+                                {% if issue.severity == 'error' %}text-red-800
+                                {% elif issue.severity == 'warning' %}text-yellow-800
+                                {% else %}text-blue-800{% endif %}">
+                                {{ issue.title }}
+                            </h4>
+                            <p class="text-sm mt-1
+                                {% if issue.severity == 'error' %}text-red-700
+                                {% elif issue.severity == 'warning' %}text-yellow-700
+                                {% else %}text-blue-700{% endif %}">
+                                {{ issue.description }}
+                            </p>
+                            {% if issue.fix %}
+                            <div class="mt-2 text-sm font-medium
+                                {% if issue.severity == 'error' %}text-red-800
+                                {% elif issue.severity == 'warning' %}text-yellow-800
+                                {% else %}text-blue-800{% endif %}">
+                                Fix: <span class="font-normal">{{ issue.fix }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <p class="text-gray-600 font-medium">No issues detected!</p>
+                <p class="text-sm text-gray-500 mt-1">Query looks good. Check the EXPLAIN tab for access patterns.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- EXPLAIN Tab -->
+        <div x-show="activeTab === 'explain'" x-transition>
+            {% if analysis.explain_rows %}
+            <!-- EXPLAIN Table -->
+            <div class="overflow-x-auto border rounded-lg mb-4">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">id</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">table</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">type</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">possible_keys</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">key</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">rows</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">filtered</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Extra</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for row in analysis.explain_rows %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-3 py-2">{{ row.id }}</td>
+                            <td class="px-3 py-2 font-medium">{{ row.table }}</td>
+                            <td class="px-3 py-2">
+                                <span class="px-2 py-0.5 rounded text-xs font-medium
+                                    {% if row.type in ['const', 'system', 'eq_ref', 'ref', 'range'] %}bg-green-100 text-green-800
+                                    {% elif row.type == 'index' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ row.type }}
+                                </span>
+                            </td>
+                            <td class="px-3 py-2 text-gray-600">{{ row.possible_keys|join(', ') if row.possible_keys else 'NULL' }}</td>
+                            <td class="px-3 py-2">
+                                {% if row.key %}
+                                <span class="text-green-700 font-medium">{{ row.key }}</span>
+                                {% else %}
+                                <span class="text-gray-400">NULL</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-2">{{ row.rows }}</td>
+                            <td class="px-3 py-2">{{ "%.1f"|format(row.filtered) }}%</td>
+                            <td class="px-3 py-2 text-xs">{{ row.extra|join('; ') if row.extra else '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Annotations -->
+            {% if analysis.explain_annotations %}
+            <div class="space-y-2">
+                <h4 class="font-medium text-gray-700">Analysis</h4>
+                {% for ann in analysis.explain_annotations %}
+                <div class="flex items-start text-sm">
+                    <span class="flex-shrink-0 w-20 font-medium text-gray-500">{{ ann.field }}:</span>
+                    <div class="flex-1">
+                        <span class="text-gray-700">{{ ann.explanation }}</span>
+                        {% if ann.recommendation %}
+                        <span class="text-indigo-600 ml-2">{{ ann.recommendation }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% else %}
+            <p class="text-gray-500 text-center py-8">EXPLAIN data not available for this query</p>
+            {% endif %}
+        </div>
+
+        <!-- Optimize Tab -->
+        <div x-show="activeTab === 'optimize'" x-transition>
+            <div class="space-y-6">
+                <!-- Index Recommendations -->
+                {% if analysis.index_recommendations %}
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                        </svg>
+                        Index Recommendations
+                    </h4>
+                    <div class="space-y-3">
+                        {% for idx in analysis.index_recommendations %}
+                        <div class="border rounded-lg p-3 bg-gray-50">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-medium text-indigo-700">{{ idx.type }}</span>
+                                <span class="text-xs text-gray-500">{{ idx.table }}.{{ idx.columns|join(', ') }}</span>
+                            </div>
+                            <code class="block text-xs bg-gray-800 text-green-400 p-2 rounded font-mono overflow-x-auto">{{ idx.sql }}</code>
+                            <p class="text-sm text-gray-600 mt-2">{{ idx.reason }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Query Rewrites -->
+                {% if analysis.rewrites %}
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        Suggested Rewrites
+                    </h4>
+                    <div class="space-y-3">
+                        {% for rewrite in analysis.rewrites %}
+                        <div class="border rounded-lg overflow-hidden">
+                            <div class="bg-red-50 px-3 py-2 border-b border-red-200">
+                                <span class="text-sm font-medium text-red-700">Before:</span>
+                                <code class="ml-2 text-sm font-mono text-red-800">{{ rewrite.original_pattern }}</code>
+                            </div>
+                            <div class="bg-green-50 px-3 py-2 border-b border-green-200">
+                                <span class="text-sm font-medium text-green-700">After:</span>
+                                <code class="ml-2 text-sm font-mono text-green-800">{{ rewrite.rewritten }}</code>
+                            </div>
+                            <div class="px-3 py-2 bg-white text-sm text-gray-600">
+                                <strong>Why:</strong> {{ rewrite.reason }}<br>
+                                <strong>Benefit:</strong> {{ rewrite.improvement }}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Optimized Query -->
+                {% if analysis.optimized_query %}
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        Optimized Query
+                    </h4>
+                    <div class="bg-gray-800 rounded-lg p-4">
+                        <code class="text-green-400 font-mono text-sm whitespace-pre-wrap">{{ analysis.optimized_query }}</code>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Tips -->
+                {% if analysis.tips %}
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-3 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                        Performance Tips
+                    </h4>
+                    <ul class="space-y-2">
+                        {% for tip in analysis.tips %}
+                        <li class="flex items-start text-sm text-gray-600">
+                            <svg class="w-4 h-4 text-indigo-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                            {{ tip }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if not analysis.index_recommendations and not analysis.rewrites and not analysis.tips %}
+                <div class="text-center py-8">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    </div>
+                    <p class="text-gray-600 font-medium">Query looks optimized!</p>
+                    <p class="text-sm text-gray-500 mt-1">No immediate optimization suggestions.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

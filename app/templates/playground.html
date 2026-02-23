@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}SQL Playground - MySQL Visual Learner{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ showSchema: true }">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg p-6">
+        <h1 class="text-3xl font-bold mb-2">SQL Playground</h1>
+        <p class="text-purple-100">Write queries, analyze performance, and learn optimization techniques</p>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Query Editor (3 cols) -->
+        <div class="lg:col-span-3 space-y-4">
+            <!-- Query Input -->
+            <div class="bg-white border rounded-lg shadow-sm">
+                <div class="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
+                    <h2 class="font-semibold text-gray-700 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
+                        </svg>
+                        Query Editor
+                    </h2>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm text-gray-500">Sample queries:</span>
+                        <select id="sample-select" class="text-sm border rounded px-2 py-1 bg-white focus:ring-2 focus:ring-indigo-500"
+                                onchange="if(this.value) document.getElementById('query-input').value = this.value;">
+                            <option value="">Choose...</option>
+                            <optgroup label="Basic Queries">
+                                {% for sq in sample_queries if sq.category == 'basic' %}
+                                <option value="{{ sq.query }}">{{ sq.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="JOINs">
+                                {% for sq in sample_queries if sq.category == 'join' %}
+                                <option value="{{ sq.query }}">{{ sq.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="Aggregations">
+                                {% for sq in sample_queries if sq.category == 'aggregate' %}
+                                <option value="{{ sq.query }}">{{ sq.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="Subqueries">
+                                {% for sq in sample_queries if sq.category == 'subquery' %}
+                                <option value="{{ sq.query }}">{{ sq.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                            <optgroup label="Anti-Patterns (try to fix!)">
+                                {% for sq in sample_queries if sq.category == 'antipattern' %}
+                                <option value="{{ sq.query }}">{{ sq.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+                <form hx-post="{{ url_for('playground.analyze') }}"
+                      hx-target="#results-container"
+                      hx-swap="innerHTML"
+                      hx-indicator="#loading-indicator">
+                    <div class="p-4">
+                        <textarea id="query-input"
+                                  name="query"
+                                  rows="4"
+                                  class="w-full font-mono text-sm border rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                  placeholder="Enter your SQL query here...&#10;Example: SELECT * FROM employees WHERE salary > 70000"
+                        >SELECT * FROM employees WHERE salary > 70000</textarea>
+                    </div>
+                    <div class="px-4 pb-4 flex items-center justify-between">
+                        <button type="submit"
+                                class="px-6 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                            Analyze Query
+                        </button>
+                        <div id="loading-indicator" class="htmx-indicator flex items-center text-indigo-600">
+                            <svg class="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Analyzing...
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Results Container -->
+            <div id="results-container">
+                <!-- Initial empty state -->
+                <div class="bg-white border rounded-lg p-8 text-center text-gray-500">
+                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                    </svg>
+                    <p class="text-lg font-medium mb-1">Ready to analyze</p>
+                    <p class="text-sm">Enter a query above and click "Analyze Query" to see results, insights, and optimization suggestions.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Schema Reference (1 col) -->
+        <div class="lg:col-span-1">
+            <div class="bg-white border rounded-lg shadow-sm sticky top-4">
+                <button @click="showSchema = !showSchema"
+                        class="w-full bg-gray-50 px-4 py-3 border-b flex items-center justify-between hover:bg-gray-100 transition-colors">
+                    <h2 class="font-semibold text-gray-700 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"/>
+                        </svg>
+                        Dataset Schema
+                    </h2>
+                    <svg class="w-5 h-5 text-gray-400 transition-transform" :class="{ 'rotate-180': !showSchema }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </button>
+                <div x-show="showSchema" x-transition class="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                    {% for table_name, table_info in schema.tables.items() %}
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="bg-indigo-50 px-3 py-2 border-b">
+                            <div class="flex items-center justify-between">
+                                <span class="font-mono text-sm font-medium text-indigo-700">{{ table_name }}</span>
+                                <span class="text-xs text-indigo-500">{{ table_info.row_count }} rows</span>
+                            </div>
+                        </div>
+                        <div class="px-3 py-2 bg-white">
+                            <div class="text-xs text-gray-500 space-y-0.5">
+                                {% for col in table_info.columns %}
+                                <div class="flex items-center">
+                                    {% if col == table_info.pk %}
+                                    <span class="text-yellow-600 mr-1" title="Primary Key">PK</span>
+                                    {% elif col in table_info.fk %}
+                                    <span class="text-blue-600 mr-1" title="Foreign Key">FK</span>
+                                    {% else %}
+                                    <span class="mr-3">&nbsp;</span>
+                                    {% endif %}
+                                    <span class="font-mono">{{ col }}</span>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Relationships -->
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 px-3 py-2 border-b">
+                            <span class="text-sm font-medium text-gray-700">Relationships</span>
+                        </div>
+                        <div class="px-3 py-2 bg-white text-xs text-gray-600 space-y-1">
+                            {% for rel in schema.relationships %}
+                            <div class="flex items-center">
+                                <span class="text-blue-600 mr-1">{{ rel.from }}</span>
+                                <span class="text-gray-400 mx-1">-></span>
+                                <span class="text-green-600">{{ rel.to }}</span>
+                                <span class="text-gray-400 ml-1">({{ rel.via }})</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips Section -->
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 class="font-semibold text-blue-800 mb-2 flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Try These Exercises
+        </h3>
+        <ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">
+            <li>Write a query with <code class="bg-blue-100 px-1 rounded">SELECT *</code> and see the warning, then fix it</li>
+            <li>Try <code class="bg-blue-100 px-1 rounded">WHERE YEAR(order_date) = 2023</code> and see the suggested rewrite</li>
+            <li>Experiment with <code class="bg-blue-100 px-1 rounded">LIKE '%phone%'</code> to understand wildcard issues</li>
+            <li>Check the EXPLAIN tab to understand how MySQL would execute your query</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}

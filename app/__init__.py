@@ -13,9 +13,11 @@ def create_app():
     # Register blueprints
     from app.routes.main import main_bp
     from app.routes.concepts import concepts_bp
+    from app.routes.playground import playground_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(concepts_bp, url_prefix='/concept')
+    app.register_blueprint(playground_bp, url_prefix='/playground')
 
     # Make concepts available in all templates
     from app.concepts import get_all_concepts
