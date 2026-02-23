@@ -101,8 +101,6 @@ class JoinTypesConcept(BaseConcept):
 
     def get_visualization_data(self, query: str, dataset) -> dict:
         """Generate visualization data for JOIN concepts."""
-        from app.engine.query_parser import parse_query, QueryType
-
         # Detect join type from query
         detected_join = self._detect_join_type(query)
 

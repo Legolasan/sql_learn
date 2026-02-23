@@ -5,7 +5,7 @@
         <p class="text-amber-100 mb-4">Keys establish identity and relationships in your database</p>
 
         <div class="grid md:grid-cols-4 gap-3 mt-4">
-            {% for key in viz_data.key_types.keys %}
+            {% for key in viz_data.key_types['keys'] %}
             <div class="bg-white/20 rounded-lg p-3">
                 <div class="flex items-center mb-2">
                     <span class="w-8 h-8 rounded-full bg-{{ key.color }}-400 text-{{ key.color }}-900 flex items-center justify-center text-xs font-bold mr-2">
@@ -25,7 +25,7 @@
             <h4 class="font-semibold text-amber-800">Key Types Explained</h4>
         </div>
         <div class="divide-y">
-            {% for key in viz_data.key_types.keys %}
+            {% for key in viz_data.key_types['keys'] %}
             <div class="p-4">
                 <div class="flex items-start">
                     <span class="w-10 h-10 rounded-lg bg-{{ key.color }}-100 text-{{ key.color }}-700 flex items-center justify-center text-sm font-bold mr-4 flex-shrink-0">

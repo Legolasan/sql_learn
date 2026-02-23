@@ -59,7 +59,7 @@
                             <div class="text-xs text-blue-600 mb-1">Internal Node (Root)</div>
                             <div class="font-mono text-lg">
                                 {% for node in viz_data.clustered_index.btree_visualization.internal_nodes %}
-                                key: {{ node.keys | join(', ') }}
+                                key: {{ node['keys'] | join(', ') }}
                                 {% endfor %}
                             </div>
                         </div>
