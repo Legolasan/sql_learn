@@ -24,12 +24,16 @@
         {% endif %}
     </div>
 
-    <!-- JOIN Type Cards -->
+    <!-- JOIN Type Cards (Clickable to change join type) -->
     <div class="grid md:grid-cols-5 gap-3">
         {% for jtype in viz_data.join_overview.types %}
-        <div class="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer
-            {% if viz_data.detected_join.type == jtype.name.split(' ')[0] | lower %}ring-2 ring-indigo-500{% endif %}"
-            @click="selectedJoin = '{{ jtype.name.split(' ')[0] | lower }}'">
+        {% set jtype_lower = jtype.name.split(' ')[0] | lower %}
+        <button class="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer text-left
+            {% if viz_data.detected_join.type == jtype_lower %}ring-2 ring-indigo-500{% endif %}"
+            hx-post="{{ url_for('concepts.run_query', concept_name='join-types') }}"
+            hx-vals='{"query": "SELECT e.name, d.name AS dept FROM employees e {{ jtype.name }} departments d ON e.department_id = d.id"}'
+            hx-target="#visualization-area"
+            hx-swap="innerHTML">
             <div class="text-center">
                 <div class="text-3xl font-bold text-indigo-600 mb-1">{{ jtype.symbol }}</div>
                 <div class="font-semibold text-sm">{{ jtype.name }}</div>
@@ -38,7 +42,7 @@
                 <div class="text-xs text-red-500 mt-1">{{ jtype.warning }}</div>
                 {% endif %}
             </div>
-        </div>
+        </button>
         {% endfor %}
     </div>
 
